@@ -1,3 +1,4 @@
+using KanKikuchi.AudioManager;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -19,13 +20,13 @@ namespace EyeMoT
 
         public void OnClick()
         {
-            //SEManager.Instance.Play(SEPath.CLICK);
+            SEManager.Instance.Play(SEPath.CLICK);
         }
 
         public void OnPointerEnter(PointerEventData eventData)
         {
-            //if(button.interactable)
-                //SEManager.Instance.Play(SEPath.HOVER);
+            if(button.interactable)
+                SEManager.Instance.Play(SEPath.HOVER);
         }
     }
 }

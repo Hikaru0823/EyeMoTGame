@@ -24,9 +24,9 @@ namespace EyeMoT.Baloon
 
         void Start()
         {
-            BGMManager.Instance.Play(BGMPath.BALLOON_GAME, volumeRate: 0.5f);
+            BGMManager.Instance.Play(BGMPath.BALLOON_TITLE, volumeRate: 0.5f);
             _spawnVolume.GetComponent<BalloonVolume>().onBalloonExited += DestroyBalloon;
-            SpawnInitialBalloons();
+            //SpawnInitialBalloons();
         }
 
         private void SpawnInitialBalloons()
