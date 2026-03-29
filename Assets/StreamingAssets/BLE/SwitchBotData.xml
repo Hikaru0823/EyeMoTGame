@@ -1,0 +1,147 @@
+<BleConfig>
+  <SwitchBotData>
+    <Version>1.1</Version>
+    <ServiceUuid>cba20d00-224d-11e6-9fb8-0002a5d5c51b</ServiceUuid>
+    <CharacteristicUuid>cba20002-224d-11e6-9fb8-0002a5d5c51b</CharacteristicUuid>
+    <SwitchBots>
+        <SwitchBotDef>
+            <Name>Bot</Name>
+            <Type>0x48</Type>
+            <Payload>0x57 0x01 0x00</Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>Color Bulb</Name>
+            <Type>0x75</Type>
+            <Payload>0x57 0x0F 0x47 0x01 0x03</Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>LED Strip Light</Name>
+            <Type>0x72</Type>
+            <Payload>0x57 0x0F 0x49 0x01 0x03</Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>Plug Mini</Name>
+            <Type>0x67</Type>
+            <Payload>0x57 0x0F 0x50 0x01 0x01 0x80</Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>Plug Mini(JP)</Name>
+            <Type>0x6A</Type>
+            <Payload>0x57 0x0F 0x50 0x01 0x02 0x80</Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>Curtain</Name>
+            <Type>0x63</Type>
+            <Payload>0x57 0x0F 0x45 0x01 0x05 0xFF 0x32</Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>WoButton</Name>
+            <Type>0x42</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>SwitchBot Hub (WoLink) Add</Name>
+            <Type>0x4C</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>SwitchBot Hub (WoLink) Normal</Name>
+            <Type>0x6C</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>SwitchBot Hub Plus (WoLink Plus) Add</Name>
+            <Type>0x50</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>SwitchBot Hub Plus (WoLink Plus) Normal</Name>
+            <Type>0x70</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>SwitchBot Fan (WoFan) Add</Name>
+            <Type>0x46</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>SwitchBot Fan (WoFan) Normal</Name>
+            <Type>0x66</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>SwitchBot MeterTH (WoSensorTH) Add</Name>
+            <Type>0x74</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>SwitchBot MeterTH (WoSensorTH) Normal</Name>
+            <Type>0x54</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>SwitchBot Mini (HubMini) Add</Name>
+            <Type>0x4D</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>SwitchBot Mini (HubMini) Normal</Name>
+            <Type>0x6D</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>Meter</Name>
+            <Type>0x54</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>Humidifier</Name>
+            <Type>0x65</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>Curtain 3</Name>
+            <Type>0x7B</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>Motion Sensor</Name>
+            <Type>0x73</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>Contact Sensor</Name>
+            <Type>0x64</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>Smart Lock</Name>
+            <Type>0x6F</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+        <SwitchBotDef>
+            <Name>Meter Plus</Name>
+            <Type>0x69</Type>
+            <Payload></Payload>
+        </SwitchBotDef>
+    </SwitchBots>
+  </SwitchBotData>
+
+  <ArmOneDaData>
+    <Version>1.0</Version>
+    <ServiceUuid>a6b00001-0eda-4b52-8e2d-9b1c3d4e5f60</ServiceUuid>
+    <CharacteristicUuid>a6b00002-0eda-4b52-8e2d-9b1c3d4e5f60</CharacteristicUuid>
+    <Indentifier>ArmOneDa-BLE-</Indentifier>
+
+    <Entry Key="Swing_On" Value="#AMOS1ON!" />
+    <Entry Key="Swing_Reverse_On" Value="#AMOS1REV!" />
+    <Entry Key="Swing_Off" Value="#AMOS1OFF!" />
+    <Entry Key="Swing_Toggle" Value="#AMOS1SW!" />
+    <Entry Key="Rapid_On" Value="#AMOR1ON!" />
+    <Entry Key="Rapid_Reverse_On" Value="#AMOR1REV!" />
+    <Entry Key="Rapid_Off" Value="#AMOR1OFF!" />
+    <Entry Key="Rapid_Toggle" Value="#AMOR1SW!" />
+    <Entry Key="AngleDecide_On" Value="#AMOH1ADxxx!" />
+    <Entry Key="AngleDecide_Off" Value="#AMOH1OFF!" />
+  </ArmOneDaData>
+</BleConfig>
