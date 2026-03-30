@@ -9,6 +9,7 @@ namespace EyeMoT.Baloon
         [Header("Resources")]
         [SerializeField] private GameObject _balloonVisual;
         [SerializeField] private Rigidbody _rigidbody;
+        [SerializeField] private MeshRenderer _collisionVisual;
 
         [Header("Settings")]
         [SerializeField] private float _lifeTime = 3.0f;
@@ -33,23 +34,6 @@ namespace EyeMoT.Baloon
                 _balloonVisualDefaultLocalPosition = _balloonVisual.transform.localPosition;
         }
 
-        public void Initialize(Color color, Action<Balloon> onLifeTimeExpired)
-        {
-            _onLifeTimeExpired += onLifeTimeExpired;
-
-            if (_balloonVisual != null)
-                _balloonVisual.GetComponent<Renderer>().material.color = color;
-        }
-
-        public void StartMove(Vector3 targetDirection, float moveSpeed)
-        {
-            _moveTargetDirection = targetDirection.normalized;
-            _moveSpeed = Mathf.Max(0f, moveSpeed);
-
-            if (_rigidbody != null)
-                _rigidbody.velocity = _moveTargetDirection * _moveSpeed;
-        }
-
         void Update()
         {
             if (!_isHit)
@@ -72,6 +56,29 @@ namespace EyeMoT.Baloon
             }
         }
 
+        public void Initialize(Color color, Action<Balloon> onLifeTimeExpired)
+        {
+            _onLifeTimeExpired += onLifeTimeExpired;
+
+            if (_balloonVisual != null)
+                _balloonVisual.GetComponent<Renderer>().material.color = color;
+        }
+
+        public void StartMove(Vector3 targetDirection, float moveSpeed)
+        {
+            _moveTargetDirection = targetDirection.normalized;
+            _moveSpeed = Mathf.Max(0f, moveSpeed);
+
+            if (_rigidbody != null)
+                _rigidbody.velocity = _moveTargetDirection * _moveSpeed;
+        }
+
+        public void VisibleCollision(bool isVisible)
+        {
+            if (_collisionVisual != null)
+                _collisionVisual.enabled = isVisible;
+        }
+
         public void OnHitLineBeam()
         {
             _isHit = true;
@@ -86,6 +93,7 @@ namespace EyeMoT.Baloon
                 _hitTime = 0f;
         }
 
+        #region Shake Effect
         private void ApplyShakeOffset(Vector3 offset)
         {
             if (_balloonVisual == null)
@@ -103,5 +111,6 @@ namespace EyeMoT.Baloon
                 Mathf.PerlinNoise(time, time) - 0.5f
             ) * (_shakeStrength * 2f);
         }
+        #endregion
     }
 }

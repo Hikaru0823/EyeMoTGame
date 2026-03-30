@@ -10,6 +10,18 @@ namespace EyeMoT.Baloon
 {
     public class BalloonSpawner : MonoBehaviour
     {
+        #region Singleton
+        public static BalloonSpawner Instance { get; private set; }
+
+        private void Awake()
+        {
+            if (Instance == null)
+                Instance = this;
+            else
+                Destroy(gameObject);
+        }
+        #endregion
+
         [Header("Resources")]
         [SerializeField] private Balloon _balloonPrefab;
         [SerializeField] private GameObject _spawnVolume;
@@ -33,6 +45,13 @@ namespace EyeMoT.Baloon
         {
             for (int i = 0; i < _maxBalloons; i++)
                 SpawnBalloon();
+        }
+
+        public Balloon SpawnBalloon(Vector3 spawnPosition, Vector3 spawnRotation)
+        {
+            Balloon newBalloon = Instantiate(_balloonPrefab, spawnPosition, Quaternion.Euler(spawnRotation));
+            newBalloon.Initialize(Color.red, DestroyBalloon);
+            return newBalloon;
         }
 
         private void SpawnBalloon()
