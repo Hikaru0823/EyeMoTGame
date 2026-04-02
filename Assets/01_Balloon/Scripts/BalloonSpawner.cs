@@ -18,7 +18,12 @@ namespace EyeMoT.Baloon
             if (Instance == null)
                 Instance = this;
             else
+            {    
                 Destroy(gameObject);
+                return;
+            }
+
+            _vfxHolder.init();
         }
         #endregion
 
@@ -26,6 +31,7 @@ namespace EyeMoT.Baloon
         [SerializeField] private Balloon _balloonPrefab;
         [SerializeField] private GameObject _spawnVolume;
         [SerializeField] private GameObject _destroyEffectPrefab;
+        [SerializeField] private VFXHolder _vfxHolder;
 
         [Header("Settings")]
         [SerializeField] private int _maxBalloons = 10;
@@ -33,36 +39,70 @@ namespace EyeMoT.Baloon
         [SerializeField] private float _offsetFromVolumeEdge = 1.1f;
 
         private readonly List<Balloon> _activeBalloons = new List<Balloon>();
+        public int BalloonCount => _activeBalloons.Count;
+        public Action OnBalloonDestroyed;
 
         void Start()
         {
-            BGMManager.Instance.Play(BGMPath.BALLOON_TITLE, volumeRate: 0.5f);
-            _spawnVolume.GetComponent<BalloonVolume>().onBalloonExited += DestroyBalloon;
+            _spawnVolume.GetComponent<BalloonVolume>().onBalloonExited += DeleteBalloon;
             //SpawnInitialBalloons();
         }
 
-        private void SpawnInitialBalloons()
+        public void SpawnInitialBalloons(GenerationPatern patern)
         {
-            for (int i = 0; i < _maxBalloons; i++)
-                SpawnBalloon();
+            _maxBalloons = SettingManager.Instance.GameData.BalloonAmount;
+            for(int i = 0; i < _maxBalloons; i++)
+                SpawnBalloon(patern);
         }
 
-        public Balloon SpawnBalloon(Vector3 spawnPosition, Vector3 spawnRotation)
+        public Balloon SpawnPreviewBalloon(Vector3 spawnPosition, Vector3 spawnRotation, bool randomColor = false)
         {
             Balloon newBalloon = Instantiate(_balloonPrefab, spawnPosition, Quaternion.Euler(spawnRotation));
-            newBalloon.Initialize(Color.red, DestroyBalloon);
+            newBalloon.Initialize(randomColor ? new Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value) : Color.red, DestroyBalloon);
             return newBalloon;
         }
 
-        private void SpawnBalloon()
+        public void ResetBalloons()
+        {
+            foreach(var balloon in _activeBalloons)
+            {
+                Destroy(balloon.gameObject);
+            }
+            _activeBalloons.Clear();
+        }
+
+        private void SpawnBalloon(GenerationPatern patern)
         {
             BalloonSpawnData spawnData = GetBalloonSpawnData();
             var randomRotate = Quaternion.Euler(0, 0, UnityEngine.Random.Range(-90f, 90f));
             var randomColor = new Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value);
-            Balloon newBalloon = Instantiate(_balloonPrefab, spawnData.Position, randomRotate);
-            newBalloon.StartMove(spawnData.MoveTargetDirection, _balloonSpeed);
-            newBalloon.Initialize(randomColor, DestroyBalloon);
-            _activeBalloons.Add(newBalloon);
+            switch(patern)
+            {
+                case GenerationPatern.Float:
+                    Balloon newBalloon = Instantiate(_balloonPrefab, spawnData.Position, randomRotate);
+                    newBalloon.StartMove(spawnData.MoveTargetDirection, _balloonSpeed);
+                    newBalloon.Initialize(randomColor, DestroyBalloon);
+                    _activeBalloons.Add(newBalloon);
+                    break;
+                case GenerationPatern.Fix:
+                    Balloon newBalloon_fix = Instantiate(_balloonPrefab, GetRandomPositionWithinVolume(_spawnVolume), randomRotate);
+                    newBalloon_fix.Initialize(randomColor, DestroyBalloon);
+                    newBalloon_fix.GetComponent<Rigidbody>().isKinematic = true;
+                    _activeBalloons.Add(newBalloon_fix);
+                    break;
+            }
+        }
+
+        private Vector3 GetRandomPositionWithinVolume(GameObject volume)
+        {
+            Vector3 volumePosition = volume.transform.position;
+            Vector3 volumeScale = volume.transform.localScale;
+
+            return new Vector3(
+                UnityEngine.Random.Range(volumePosition.x - volumeScale.x / 2f, volumePosition.x + volumeScale.x / 2f),
+                UnityEngine.Random.Range(volumePosition.y - volumeScale.y / 2f, volumePosition.y + volumeScale.y / 2f),
+                UnityEngine.Random.Range(volumePosition.z - volumeScale.z / 2f, volumePosition.z + volumeScale.z / 2f)
+            );
         }
 
         private BalloonSpawnData GetBalloonSpawnData(Side? spawnSide = null)
@@ -161,18 +201,33 @@ namespace EyeMoT.Baloon
 
         private void DestroyBalloon(Balloon balloon)
         {
-            Instantiate(_destroyEffectPrefab, balloon.transform.position, Quaternion.identity);
+            if(!_vfxHolder.TryGet(SettingManager.Instance.BalloonData.VFXIdx, out var effect)) return;
+
+            Instantiate(effect.Object, balloon.transform.position, effect.Object.transform.rotation);
+            SEManager.Instance.Play(effect.CurrentSEPath); 
+            _activeBalloons.Remove(balloon);
+            OnBalloonDestroyed?.Invoke();
+            Destroy(balloon.gameObject);
+
+            if(_activeBalloons.Count <= 0) return;
+            SpawnBalloon(SettingManager.Instance.GameData.BalloonGeneratePatern);
+        }
+
+        private void DeleteBalloon(Balloon balloon)
+        {
             _activeBalloons.Remove(balloon);
             Destroy(balloon.gameObject);
-            SpawnBalloon();
+            SpawnBalloon(SettingManager.Instance.GameData.BalloonGeneratePatern);
         }
 
         private enum Side
         {
-            Left,
-            Up,
-            Right,
-            Down
+            Left, Up, Right, Down
+        }
+
+        public enum GenerationPatern
+        {
+            Float, Fix,
         }
 
         private class BalloonSpawnData

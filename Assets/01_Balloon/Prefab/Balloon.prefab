@@ -75,8 +75,8 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.15
-  m_Height: 0.4
+  m_Radius: 0.2925
+  m_Height: 0.78
   m_Direction: 1
   m_Center: {x: 0, y: -0.07, z: 0}
 --- !u!54 &6711869350807581642
@@ -104,7 +104,7 @@ Rigidbody:
   m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 0
+  m_Constraints: 8
   m_CollisionDetection: 0
 --- !u!1 &5656865846705647111
 GameObject:
@@ -134,7 +134,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: -0.0697, z: 0}
-  m_LocalScale: {x: 0.295, y: 0.20102556, z: 0.295}
+  m_LocalScale: {x: 0.57525, y: 0.39199987, z: 0.57525}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 1313007508990118235}
@@ -260,6 +260,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: df991b9bcaaa56e4085a83ce96189518, type: 3}
       propertyPath: m_Name
       value: BalloonVisual
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: df991b9bcaaa56e4085a83ce96189518, type: 3}
+      propertyPath: m_Layer
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: df991b9bcaaa56e4085a83ce96189518, type: 3}
       propertyPath: m_IsActive

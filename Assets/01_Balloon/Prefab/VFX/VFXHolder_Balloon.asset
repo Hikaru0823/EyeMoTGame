@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d84fd2530a8041afa8356f316ca6919, type: 3}
+  m_Name: VFXHolder_Balloon
+  m_EditorClassIdentifier: 
+  _DataList:
+  - _Type: 2
+    _Object: {fileID: 9157105887711914197, guid: 4c3a8f21cedb7d44dafee3fbf683761e, type: 3}
+    _SEPath: SE/SmokePop
+  - _Type: 0
+    _Object: {fileID: 2433282508537954060, guid: 49df0be2d45b4480d944f8680a21587d, type: 3}
+    _SEPath: SE/Explosion_00
+  - _Type: 1
+    _Object: {fileID: 725748389856807714, guid: 368f234136f73408baa1e5009673f9fe, type: 3}
+    _SEPath: SE/Explosion_01
+  - _Type: 3
+    _Object: {fileID: 2504214343621411470, guid: 6562955a8e9644daaa5e41c578074d21, type: 3}
+    _SEPath: SE/Fire_00
+  - _Type: 4
+    _Object: {fileID: 5112403345868107898, guid: 1d8b0c2346c6540cb851c3de343e53b4, type: 3}
+    _SEPath: SE/Ice_00
+  - _Type: 5
+    _Object: {fileID: 8771972552311404799, guid: 77c60d784138f44c1bf371c5b6fbf56f, type: 3}
+    _SEPath: SE/Light_00

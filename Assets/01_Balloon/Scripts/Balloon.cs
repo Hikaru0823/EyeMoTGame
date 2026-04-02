@@ -25,6 +25,13 @@ namespace EyeMoT.Baloon
         private float _moveSpeed;
         private Vector3 _balloonVisualDefaultLocalPosition;
 
+        #region default paramaters
+        private Vector3 _defaultVisualScale;
+        private Vector3 _defaultCollisionScale;
+        private float _defaultCollisionRadius;
+        private float _defaultCollisionHight;
+        #endregion
+
         void Start()
         {
             if (_rigidbody == null)
@@ -32,6 +39,9 @@ namespace EyeMoT.Baloon
 
             if (_balloonVisual != null)
                 _balloonVisualDefaultLocalPosition = _balloonVisual.transform.localPosition;
+
+            SetDefault();
+            UpdateData();
         }
 
         void Update()
@@ -51,7 +61,6 @@ namespace EyeMoT.Baloon
 
             if (_hitTime >= _lifeTime)
             {   
-                SEManager.Instance.Play(SEPath.BALLOON_POP); 
                 _onLifeTimeExpired?.Invoke(this);
             }
         }
@@ -73,10 +82,10 @@ namespace EyeMoT.Baloon
                 _rigidbody.velocity = _moveTargetDirection * _moveSpeed;
         }
 
-        public void VisibleCollision(bool isVisible)
+        public void StartBalloonDestroy(float lifeTime)
         {
-            if (_collisionVisual != null)
-                _collisionVisual.enabled = isVisible;
+            _isHit = true;
+            _lifeTime = lifeTime;
         }
 
         public void OnHitLineBeam()
@@ -91,6 +100,29 @@ namespace EyeMoT.Baloon
 
             if (_hitTimeResetOnMiss)
                 _hitTime = 0f;
+        }
+
+        public void UpdateData()
+        {
+            _balloonVisual.transform.localScale = _defaultVisualScale * SettingManager.Instance.BalloonData.VisualScale;
+
+            _collisionVisual.transform.localScale = _defaultCollisionScale * SettingManager.Instance.BalloonData.CollisionScale;
+            var collision = GetComponent<CapsuleCollider>();
+            collision.radius = _defaultCollisionRadius * SettingManager.Instance.BalloonData.CollisionScale;
+            collision.height = _defaultCollisionHight * SettingManager.Instance.BalloonData.CollisionScale;
+
+            _lifeTime = SettingManager.Instance.BalloonData.LifeTime;
+        }
+
+        public void VisibleCollision(bool isVisible) => _collisionVisual.enabled = isVisible;
+
+        private void SetDefault()
+        {
+            _defaultVisualScale = _balloonVisual.transform.localScale;
+            _defaultCollisionScale = _collisionVisual.transform.localScale;
+            var collision = GetComponent<CapsuleCollider>();
+            _defaultCollisionRadius = collision.radius;
+            _defaultCollisionHight = collision.height;
         }
 
         #region Shake Effect

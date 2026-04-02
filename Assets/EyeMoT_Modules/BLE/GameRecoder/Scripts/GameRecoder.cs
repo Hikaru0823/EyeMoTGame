@@ -231,18 +231,18 @@ namespace EyeMoT.GameRecoder
         /// マイクが未設定の場合、接続されているマイクの一つを割り当てる
         /// </summary>
         /// <returns>マイクが存在すればtrue、なければfalse</returns>
-        private string GetDefaultMic()
-        {
-            if (string.IsNullOrEmpty(micName))
-            {
-                string[] devices = Microphone.devices;
-                if (devices.Length > 0)
-                {
-                    return devices[1];
-                }
-                return "";
-            }
-            return micName;
-        }
+        // private string GetDefaultMic()
+        // {
+        //     if (string.IsNullOrEmpty(micName))
+        //     {
+        //         string[] devices = Microphone.devices;
+        //         if (devices.Length > 0)
+        //         {
+        //             return devices[1];
+        //         }
+        //         return "";
+        //     }
+        //     return micName;
+        // }
     }
 }

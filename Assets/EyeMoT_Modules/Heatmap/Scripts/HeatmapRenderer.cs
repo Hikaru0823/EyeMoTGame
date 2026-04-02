@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -24,6 +25,7 @@ namespace EyeMoT.Heatmap
         [SerializeField] private Material _stampMaterial;
         [SerializeField] private Material _colorizeMaterial;
         [SerializeField] private RawImage _previewImage;
+        public void VisibleHeatmap(bool isVisible) => _previewImage.enabled = isVisible;
 
         [Header("Settings")]
         [SerializeField] private int _textureSize = 512;
@@ -39,7 +41,7 @@ namespace EyeMoT.Heatmap
 
         private Vector2 _prevUV;
         private bool _hasPrev = false;
-        private bool _isStart = true;
+        private bool _isStart = false;
         private int _screenWidth;
         private int _screenHeight;
         private string _dirName = "";
@@ -74,18 +76,63 @@ namespace EyeMoT.Heatmap
             _dirName = dirName;
         }
 
-        public void StopHeatmap()
+        public float StopHeatmap(bool writeCsv = true)
         {
             Debug.Log($"<color=orange>[HeatMap]</color> Stop Recording.");
             _isStart = false;
+            var totalDistance = GetTotalGazeDistance();
+
+            if(!writeCsv)
+            {
+                _dataList.Clear();
+                return totalDistance;
+            }
 
             #if UNITY_WEBGL && !UNITY_EDITOR
-            return;
+            _dataList.Clear();
+            return totalDistance;
             #endif
 
-            HeatmapCsvWriter.WriteCsv(System.IO.Path.GetDirectoryName(Application.dataPath) + _saveDir + (_dirName == "" ? "" : $"/{_dirName}"), _dataList);
-            Debug.Log($"<color=orange>[HeatMap]</color> Data saved to: {System.IO.Path.GetDirectoryName(Application.dataPath) + _saveDir + (_dirName == "" ? "" : $"/{_dirName}")}");
+            HeatmapCsvWriter.WriteCsv(System.IO.Path.GetDirectoryName(Application.dataPath) + _saveDir + (_dirName == "" ? "" : $"{_dirName}/"), totalDistance, _dataList);
+            Debug.Log($"<color=orange>[HeatMap]</color> Data saved to: {System.IO.Path.GetDirectoryName(Application.dataPath) + _saveDir + (_dirName == "" ? "" : $"/{_dirName}/")}");
             _dataList.Clear();
+
+            return totalDistance;
+        }
+
+        public float GetTotalGazeDistance()
+        {
+            if (_dataList.Count < 2)
+            {
+                return 0f;
+            }
+
+            float totalDistance = 0f;
+            Vector2? previousPoint = null;
+
+            foreach (var data in _dataList)
+            {
+                if (data == null || data.Length < 3)
+                {
+                    continue;
+                }
+
+                if (!float.TryParse(data[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float x) ||
+                    !float.TryParse(data[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float y))
+                {
+                    continue;
+                }
+
+                Vector2 currentPoint = new Vector2(x, y);
+                if (previousPoint.HasValue)
+                {
+                    totalDistance += Vector2.Distance(previousPoint.Value, currentPoint);
+                }
+
+                previousPoint = currentPoint;
+            }
+
+            return totalDistance;
         }
 
         RenderTexture CreateRT(int size)

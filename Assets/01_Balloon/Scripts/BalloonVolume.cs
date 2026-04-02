@@ -16,7 +16,7 @@ namespace EyeMoT.Baloon
         private void Start()
         {
             if (!_isVisible)
-                GetComponent<MeshRenderer>().material.color = new Color(1f, 1f, 1f, 0.0f); 
+                GetComponent<MeshRenderer>().material.SetColor( "_BaseColor", new Color(1f, 1f, 1f, 0.0f)); 
         }
 
         private void OnTriggerExit(Collider other)
