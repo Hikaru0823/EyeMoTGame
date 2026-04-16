@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using Unity.VisualScripting;
 
 namespace EyeMoT
 {
@@ -41,7 +42,7 @@ namespace EyeMoT
 
         void OnEnable()
         {
-
+            
             if(panels[currentPanelIndex].panelObject != null && panels[newPanelIndex].panelObject != null)
             {   
                 currentPanel = panels[currentPanelIndex].panelObject;
@@ -105,6 +106,11 @@ namespace EyeMoT
 
                 StartCoroutine("DisablePreviousPanel");
             }
+        }
+
+        public string GetCurrentPanelName()
+        {
+            return panels[currentPanelIndex].panelName;
         }
 
         IEnumerator DisablePreviousPanel()

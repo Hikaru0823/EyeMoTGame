@@ -1,14 +1,16 @@
 using System;
+using Fusion;
+using Fusion.Addons.Physics;
 using KanKikuchi.AudioManager;
 using UnityEngine;
 
 namespace EyeMoT.Baloon
 {
-    public class Balloon : MonoBehaviour
+    public class Balloon : NetworkBehaviour
     {
         [Header("Resources")]
         [SerializeField] private GameObject _balloonVisual;
-        [SerializeField] private Rigidbody _rigidbody;
+        [SerializeField] private NetworkRigidbody3D _networkRigidbody;
         [SerializeField] private MeshRenderer _collisionVisual;
 
         [Header("Settings")]
@@ -25,6 +27,14 @@ namespace EyeMoT.Baloon
         private float _moveSpeed;
         private Vector3 _balloonVisualDefaultLocalPosition;
 
+        [Networked] private NetworkBool IsHit { get; set; }
+        [Networked] private float HitTime { get; set; }
+        [Networked] private float NetworkedLifeTime { get; set; }
+        [Networked] private Vector3 NetworkedMoveTargetDirection { get; set; }
+        [Networked] private float NetworkedMoveSpeed { get; set; }
+        [Networked, OnChangedRender(nameof(OnColorChanged))]
+        public Color NetworkedColor { get; set; }
+
         #region default paramaters
         private Vector3 _defaultVisualScale;
         private Vector3 _defaultCollisionScale;
@@ -32,74 +42,90 @@ namespace EyeMoT.Baloon
         private float _defaultCollisionHight;
         #endregion
 
-        void Start()
+        private bool _hasDefaultValues;
+        private bool IsNetworkSpawned => Object != null && Object.IsValid;
+        private bool CurrentIsHit => IsNetworkSpawned ? IsHit : _isHit;
+        private float CurrentHitTime => IsNetworkSpawned ? HitTime : _hitTime;
+        private float CurrentLifeTime => IsNetworkSpawned ? NetworkedLifeTime : _lifeTime;
+
+        public override void Spawned()
         {
-            if (_rigidbody == null)
-                _rigidbody = GetComponent<Rigidbody>();
-
-            if (_balloonVisual != null)
-                _balloonVisualDefaultLocalPosition = _balloonVisual.transform.localPosition;
-
-            SetDefault();
+            InitializeComponents();
             UpdateData();
+
+            if (Object.HasStateAuthority)
+                NetworkedLifeTime = _lifeTime;
+            OnColorChanged();
         }
 
         void Update()
         {
-            if (!_isHit)
+            if (IsNetworkSpawned)
+                return;
+
+            TickBalloon(Time.deltaTime, true);
+        }
+
+        public override void FixedUpdateNetwork()
+        {
+            TickBalloon(Runner.DeltaTime, Object.HasStateAuthority);
+        }
+
+        private void TickBalloon(float deltaTime, bool canExpire)
+        {
+            if (!CurrentIsHit)
             {
                 ApplyShakeOffset(Vector3.zero);
                 return;
             }
 
-            _hitTime += Time.deltaTime;
+            AddHitTime(deltaTime);
 
             if (_shakeOnHit)
                 ApplyShakeOffset(GetShakeOffset());
             else
                 ApplyShakeOffset(Vector3.zero);
 
-            if (_hitTime >= _lifeTime)
+            if (canExpire && CurrentHitTime >= CurrentLifeTime)
             {   
                 _onLifeTimeExpired?.Invoke(this);
             }
         }
 
-        public void Initialize(Color color, Action<Balloon> onLifeTimeExpired)
+        public void Initialize(Action<Balloon> onLifeTimeExpired)
         {
             _onLifeTimeExpired += onLifeTimeExpired;
-
-            if (_balloonVisual != null)
-                _balloonVisual.GetComponent<Renderer>().material.color = color;
         }
 
         public void StartMove(Vector3 targetDirection, float moveSpeed)
         {
             _moveTargetDirection = targetDirection.normalized;
             _moveSpeed = Mathf.Max(0f, moveSpeed);
+            SetMoveState(_moveTargetDirection, _moveSpeed);
 
-            if (_rigidbody != null)
-                _rigidbody.velocity = _moveTargetDirection * _moveSpeed;
+            if (_networkRigidbody != null)
+                _networkRigidbody.Rigidbody.velocity = _moveTargetDirection * _moveSpeed;
         }
 
         public void StartBalloonDestroy(float lifeTime)
         {
-            _isHit = true;
             _lifeTime = lifeTime;
+            SetLifeTime(lifeTime);
+            SetHitState(true);
         }
 
         public void OnHitLineBeam()
         {
-            _isHit = true;
+            SetHitState(true);
         }
 
         public void OnMissLineBeam()
         {
-            _isHit = false;
+            SetHitState(false);
             ApplyShakeOffset(Vector3.zero);
 
             if (_hitTimeResetOnMiss)
-                _hitTime = 0f;
+                SetHitTime(0f);
         }
 
         public void UpdateData()
@@ -112,17 +138,135 @@ namespace EyeMoT.Baloon
             collision.height = _defaultCollisionHight * SettingManager.Instance.BalloonData.CollisionScale;
 
             _lifeTime = SettingManager.Instance.BalloonData.LifeTime;
+            SetLifeTime(_lifeTime);
         }
 
         public void VisibleCollision(bool isVisible) => _collisionVisual.enabled = isVisible;
 
         private void SetDefault()
         {
+            if (_hasDefaultValues)
+                return;
+
             _defaultVisualScale = _balloonVisual.transform.localScale;
             _defaultCollisionScale = _collisionVisual.transform.localScale;
             var collision = GetComponent<CapsuleCollider>();
             _defaultCollisionRadius = collision.radius;
             _defaultCollisionHight = collision.height;
+            _hasDefaultValues = true;
+        }
+
+        private void InitializeComponents()
+        {
+            if (_networkRigidbody == null)
+                _networkRigidbody = GetComponent<NetworkRigidbody3D>();
+
+            if (_balloonVisual != null)
+                _balloonVisualDefaultLocalPosition = _balloonVisual.transform.localPosition;
+
+            SetDefault();
+        }
+
+        private void AddHitTime(float deltaTime)
+        {
+            if (IsNetworkSpawned)
+            {
+                if (Object.HasStateAuthority)
+                    HitTime += deltaTime;
+            }
+            else
+            {
+                _hitTime += deltaTime;
+            }
+        }
+
+        private void SetHitTime(float hitTime)
+        {
+            _hitTime = hitTime;
+
+            if (!IsNetworkSpawned)
+                return;
+
+            if (Object.HasStateAuthority)
+                HitTime = hitTime;
+            else
+                Rpc_SetHitTime(hitTime);
+        }
+
+        private void SetHitState(bool isHit)
+        {
+            _isHit = isHit;
+
+            if (!IsNetworkSpawned)
+                return;
+
+            if (Object.HasStateAuthority)
+                IsHit = isHit;
+            else
+                Rpc_SetHitState(isHit);
+        }
+
+        private void SetLifeTime(float lifeTime)
+        {
+            _lifeTime = lifeTime;
+
+            if (!IsNetworkSpawned)
+                return;
+
+            if (Object.HasStateAuthority)
+                NetworkedLifeTime = lifeTime;
+            else
+                Rpc_SetLifeTime(lifeTime);
+        }
+
+        private void SetMoveState(Vector3 targetDirection, float moveSpeed)
+        {
+            if (!IsNetworkSpawned)
+                return;
+
+            if (Object.HasStateAuthority)
+            {
+                NetworkedMoveTargetDirection = targetDirection;
+                NetworkedMoveSpeed = moveSpeed;
+            }
+            else
+            {
+                Rpc_SetMoveState(targetDirection, moveSpeed);
+            }
+        }
+
+        private void OnColorChanged()
+        {
+            if (_balloonVisual != null)
+                _balloonVisual.GetComponent<Renderer>().material.color = NetworkedColor;
+        }
+
+        [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+        private void Rpc_SetHitState(bool isHit)
+        {
+            IsHit = isHit;
+        }
+
+        [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+        private void Rpc_SetHitTime(float hitTime)
+        {
+            HitTime = hitTime;
+        }
+
+        [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+        private void Rpc_SetLifeTime(float lifeTime)
+        {
+            NetworkedLifeTime = lifeTime;
+        }
+
+        [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+        private void Rpc_SetMoveState(Vector3 targetDirection, float moveSpeed)
+        {
+            NetworkedMoveTargetDirection = targetDirection;
+            NetworkedMoveSpeed = moveSpeed;
+
+            if (_networkRigidbody != null)
+                _networkRigidbody.Rigidbody.velocity = targetDirection * moveSpeed;
         }
 
         #region Shake Effect

@@ -11,4 +11,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/01_Balloon/Scene/01_Balloon.unity
     guid: cb888954783f0f9418873d5713753a6e
+  - enabled: 0
+    path: Assets/00_Lobby/Scenes/00_Lobby.unity
+    guid: 5df856141a896d646ad539f5ae163600
   m_configObjects: {}

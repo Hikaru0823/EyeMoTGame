@@ -33,6 +33,8 @@ MonoBehaviour:
     - Assembly-CSharp
     - CFXRDemo
     - CFXRRuntime
+    - Fusion.Addons.Physics
+    - Fusion.Unity
     - KinoBloom.Runtime
     showAdvancedSettings: 0
   addMgrToSceneAutomatically: 0

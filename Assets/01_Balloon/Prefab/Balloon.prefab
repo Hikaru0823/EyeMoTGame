@@ -12,6 +12,8 @@ GameObject:
   - component: {fileID: 4252292955913867100}
   - component: {fileID: 4116788698675896300}
   - component: {fileID: 6711869350807581642}
+  - component: {fileID: 6981455131539824850}
+  - component: {fileID: 3196009019209200007}
   m_Layer: 0
   m_Name: Balloon
   m_TagString: Balloon
@@ -49,7 +51,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _balloonVisual: {fileID: 4524224954610799887}
-  _rigidbody: {fileID: 6711869350807581642}
+  _networkRigidbody: {fileID: 3196009019209200007}
   _collisionVisual: {fileID: 4392868035393621736}
   _lifeTime: 1
   _hitTimeResetOnMiss: 0
@@ -106,6 +108,49 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 8
   m_CollisionDetection: 0
+--- !u!114 &6981455131539824850
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3435283679340697554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -1552182283, guid: e725a070cec140c4caffb81624c8c787, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SortKey: 3232897548
+  ObjectInterest: 1
+  Flags: 262145
+  NestedObjects: []
+  NetworkedBehaviours:
+  - {fileID: 4252292955913867100}
+  - {fileID: 3196009019209200007}
+  ForceRemoteRenderTimeframe: 0
+--- !u!114 &3196009019209200007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3435283679340697554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a591d221a634417e9827eb58e17de84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _stateAuthorityChangeErrorCorrectionDelta: 0
+  SyncScale: 0
+  SyncParent: 1
+  _interpolationTarget: {fileID: 0}
+  UsePreciseRotation: 0
+  UseRenderSleepThresholds: 1
+  RenderThresholds:
+    UseEnergy: 1
+    Position: 0.01
+    Rotation: 0.01
+    Scale: 0.01
 --- !u!1 &5656865846705647111
 GameObject:
   m_ObjectHideFlags: 0

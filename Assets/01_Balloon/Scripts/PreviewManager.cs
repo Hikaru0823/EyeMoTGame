@@ -6,7 +6,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class PreviewManager : MonoBehaviour
+public class PreviewManager : SceneSingleton<PreviewManager>
 {
     [Header("Resources")]
     [SerializeField] private List<PreviewItem> _items = new();
@@ -22,14 +22,7 @@ public class PreviewManager : MonoBehaviour
     private Coroutine _balloonDestroy;
 
 
-    void Start()
-    {
-        SpawnPreviewBalloon();
-        // UpdateBalloon();
-        // UpdateBackGround();
-    }
-
-    private void SpawnPreviewBalloon()
+    public void SpawnPreviewBalloon()
     {
         var offset = Vector3.forward * 2.45f + Vector3.up * 0.3f;
         _previewBalloon = BalloonSpawner.Instance.SpawnPreviewBalloon(transform.position + offset, Vector3.zero);
@@ -59,7 +52,7 @@ public class PreviewManager : MonoBehaviour
         switch(newItem)
         {
             case "Interaction":
-                _balloonDestroy = StartCoroutine(BalloonDestroyRoutine(0.3f));
+                _balloonDestroy = StartCoroutine(BalloonDestroyRoutine(0.5f));
                 break;
         }
     }
@@ -69,7 +62,7 @@ public class PreviewManager : MonoBehaviour
         while(true)
         {
             _previewBalloon.StartBalloonDestroy(_lifeTime);
-            yield return new WaitForSeconds(_lifeTime + 1.5f);
+            yield return new WaitForSeconds(_lifeTime + 1.0f);
             SpawnPreviewBalloon();
         }
     }

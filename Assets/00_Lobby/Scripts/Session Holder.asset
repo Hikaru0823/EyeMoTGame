@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 142519907700bae449f3d51c4efa95a7, type: 3}
+  m_Name: Session Holder
+  m_EditorClassIdentifier: 
+  _DataList:
+  - _Name: 0
+    _Sprite: {fileID: 21300000, guid: 0dc2076fb32974efa9d9de83cbbc92fc, type: 3}
+    _UIName: "\u30CF\u30FC\u30C8"
+  - _Name: 1
+    _Sprite: {fileID: 21300000, guid: f90c856fffce24840a8c10b70d1ac12e, type: 3}
+    _UIName: "\u3055\u304B\u306A"
+  - _Name: 2
+    _Sprite: {fileID: 21300000, guid: 39dc95c901a324158be989dbf7a5dbe9, type: 3}
+    _UIName: "\u307B\u3046\u305B\u304D"
+  - _Name: 3
+    _Sprite: {fileID: 21300000, guid: fc071fa6560c246cdbe4e0ac1f9a39f3, type: 3}
+    _UIName: "\u304A\u3093\u3077"
+  - _Name: 4
+    _Sprite: {fileID: 21300000, guid: aca7f8df033db47829c8fe44459265ae, type: 3}
+    _UIName: "\u3042\u3044\u3059"
+  - _Name: 5
+    _Sprite: {fileID: 21300000, guid: 161d575d19bff4914a957067a4afd087, type: 3}
+    _UIName: "\u3076\u305F"

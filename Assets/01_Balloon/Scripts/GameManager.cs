@@ -1,20 +1,25 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using EyeMoT.Fusion;
 using EyeMoT.Heatmap;
+using Fusion;
 using KanKikuchi.AudioManager;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem.Interactions;
+using UnityEngine.SceneManagement;
 
 namespace EyeMoT.Baloon
 {
-    public class GameManager : MonoBehaviour
+    public class GameManager : SceneSingleton<GameManager>
     {
         [Header("Resources")]
         [SerializeField] private TMP_Text _gameTimeText;
         [SerializeField] private TMP_Text _balloonCountText;
         [SerializeField] private Animator _resultPanel;
+        [SerializeField] private TabManager _mainTabManager;
 
         private bool _isStart = false;
         private float _time = 0f;
@@ -22,8 +27,14 @@ namespace EyeMoT.Baloon
 
         void Start()
         {
-            BGMManager.Instance.Play(BGMPath.BALLOON_TITLE, volumeRate: 0.5f);
             BalloonSpawner.Instance.OnBalloonDestroyed += UpdateBalloonCount;
+            StartCoroutine(Init());
+        }
+        IEnumerator Init()
+        {
+            BGMManager.Instance.Play(BGMPath.BALLOON_TITLE, volumeRate: 0.5f);
+            yield return LobbyManager.Instance.SingleSessionRoutine();
+            PreviewManager.Instance.SpawnPreviewBalloon();
         }
 
         void Update()
@@ -42,14 +53,18 @@ namespace EyeMoT.Baloon
 
         public void GameStart()
         {
+            _mainTabManager.OpenPanel("Game");
             HeatmapRenderer.Instance.StartHeatmap("01_Balloon");
             BGMManager.Instance.Play(BGMPath.BALLOON_GAME, volumeRate: 0.5f);
-            BalloonSpawner.Instance.SpawnInitialBalloons(SettingManager.Instance.GameData.BalloonGeneratePatern);
+
             _gameTimeText.text = SettingManager.Instance.GameData.GameTime.ToString("F1") + "s";
             _balloonCountText.text = "×" + 0;
             _balloonCount = 0;
             _time = 0f;
             _isStart = true;
+
+            if(!LobbyManager.Instance.Runner.IsServer) return;
+            BalloonSpawner.Instance.SpawnInitialBalloons(SettingManager.Instance.GameData.BalloonGeneratePatern);
         }
 
         public void GameEnd()
@@ -78,12 +93,29 @@ namespace EyeMoT.Baloon
             BGMManager.Instance.Play(BGMPath.BALLOON_TITLE, volumeRate: 0.5f);
             _isStart = false;
             BalloonSpawner.Instance.ResetBalloons();
+
+            StartCoroutine(GameExitRoutine());
+        }
+
+        public IEnumerator GameExitRoutine()
+        {
+            yield return LobbyManager.Instance.QuitRoutine();
+            yield return Init();
         }
 
         private void UpdateBalloonCount()
         {
             _balloonCount++;
             _balloonCountText.text = "×" + _balloonCount;
+        }
+
+        public void LoadLobbyScene()
+        {
+            //SceneManager.LoadScene("00_Lobby", LoadSceneMode.Additive);
+            LobbyManager.Instance.OnGameStart -= GameStart;
+            LobbyManager.Instance.OnGameStart += GameStart;
+            LobbyManager.Instance._mainTabManager.OpenPanel("Network");
+            LobbyManager.Instance.TryJoinLobby();
         }
     }
 }

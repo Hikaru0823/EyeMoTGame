@@ -5,20 +5,8 @@ using UnityEngine;
 
 namespace EyeMoT.Baloon
 {
-    public class SettingManager : MonoBehaviour
+    public class SettingManager : SceneSingleton<SettingManager>
     {
-        #region Singleton
-        public static SettingManager Instance { get; private set; }
-
-        private void Awake()
-        {
-            if (Instance == null)
-                Instance = this;
-            else
-                Destroy(gameObject);
-        }
-        #endregion
-
         public GameData GameData {get; private set;} = new GameData();
         public BalloonData BalloonData {get; private set;} = new BalloonData();
 

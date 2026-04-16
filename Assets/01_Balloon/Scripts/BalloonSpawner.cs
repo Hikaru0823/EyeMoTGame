@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
+using EyeMoT.Fusion;
+using Fusion.Addons.Physics;
 using KanKikuchi.AudioManager;
 using UnityEngine;
 
@@ -8,21 +10,12 @@ using UnityEngine;
 
 namespace EyeMoT.Baloon
 {
-    public class BalloonSpawner : MonoBehaviour
+    public class BalloonSpawner : SceneSingleton<BalloonSpawner>
     {
         #region Singleton
-        public static BalloonSpawner Instance { get; private set; }
 
-        private void Awake()
+        protected override void OnAwake()
         {
-            if (Instance == null)
-                Instance = this;
-            else
-            {    
-                Destroy(gameObject);
-                return;
-            }
-
             _vfxHolder.init();
         }
         #endregion
@@ -45,20 +38,21 @@ namespace EyeMoT.Baloon
         void Start()
         {
             _spawnVolume.GetComponent<BalloonVolume>().onBalloonExited += DeleteBalloon;
-            //SpawnInitialBalloons();
         }
 
         public void SpawnInitialBalloons(GenerationPatern patern)
         {
             _maxBalloons = SettingManager.Instance.GameData.BalloonAmount;
             for(int i = 0; i < _maxBalloons; i++)
-                SpawnBalloon(patern);
+                SpawnBalloonPatern(patern);
         }
 
         public Balloon SpawnPreviewBalloon(Vector3 spawnPosition, Vector3 spawnRotation, bool randomColor = false)
         {
-            Balloon newBalloon = Instantiate(_balloonPrefab, spawnPosition, Quaternion.Euler(spawnRotation));
-            newBalloon.Initialize(randomColor ? new Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value) : Color.red, DestroyBalloon);
+            Balloon newBalloon = LobbyManager.Instance.Runner.Spawn(_balloonPrefab, spawnPosition, Quaternion.Euler(spawnRotation), onBeforeSpawned: (runner, obj) => {
+                        obj.GetComponent<Balloon>().NetworkedColor = randomColor ? new Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value) : Color.red;
+                    });
+            newBalloon.Initialize(DestroyBalloon);
             return newBalloon;
         }
 
@@ -66,12 +60,12 @@ namespace EyeMoT.Baloon
         {
             foreach(var balloon in _activeBalloons)
             {
-                Destroy(balloon.gameObject);
+                LobbyManager.Instance.Runner.Despawn(balloon.Object);
             }
             _activeBalloons.Clear();
         }
 
-        private void SpawnBalloon(GenerationPatern patern)
+        private void SpawnBalloonPatern(GenerationPatern patern)
         {
             BalloonSpawnData spawnData = GetBalloonSpawnData();
             var randomRotate = Quaternion.Euler(0, 0, UnityEngine.Random.Range(-90f, 90f));
@@ -79,19 +73,24 @@ namespace EyeMoT.Baloon
             switch(patern)
             {
                 case GenerationPatern.Float:
-                    Balloon newBalloon = Instantiate(_balloonPrefab, spawnData.Position, randomRotate);
+                    Balloon newBalloon = LobbyManager.Instance.Runner.Spawn(_balloonPrefab, spawnData.Position, randomRotate, onBeforeSpawned: (runner, obj) => {
+                        obj.GetComponent<Balloon>().NetworkedColor = randomColor;
+                    });
                     newBalloon.StartMove(spawnData.MoveTargetDirection, _balloonSpeed);
-                    newBalloon.Initialize(randomColor, DestroyBalloon);
+                    newBalloon.Initialize( DestroyBalloon);
                     _activeBalloons.Add(newBalloon);
                     break;
                 case GenerationPatern.Fix:
-                    Balloon newBalloon_fix = Instantiate(_balloonPrefab, GetRandomPositionWithinVolume(_spawnVolume), randomRotate);
-                    newBalloon_fix.Initialize(randomColor, DestroyBalloon);
-                    newBalloon_fix.GetComponent<Rigidbody>().isKinematic = true;
+                    Balloon newBalloon_fix = LobbyManager.Instance.Runner.Spawn(_balloonPrefab, GetRandomPositionWithinVolume(_spawnVolume), randomRotate, onBeforeSpawned: (runner, obj) => {
+                        obj.GetComponent<Balloon>().NetworkedColor = randomColor;
+                    });
+                    newBalloon_fix.Initialize( DestroyBalloon);
+                    newBalloon_fix.GetComponent<NetworkRigidbody3D>().RBIsKinematic = true;
                     _activeBalloons.Add(newBalloon_fix);
                     break;
             }
         }
+
 
         private Vector3 GetRandomPositionWithinVolume(GameObject volume)
         {
@@ -207,17 +206,17 @@ namespace EyeMoT.Baloon
             SEManager.Instance.Play(effect.CurrentSEPath); 
             _activeBalloons.Remove(balloon);
             OnBalloonDestroyed?.Invoke();
-            Destroy(balloon.gameObject);
+            LobbyManager.Instance.Runner.Despawn(balloon.Object);
 
             if(_activeBalloons.Count <= 0) return;
-            SpawnBalloon(SettingManager.Instance.GameData.BalloonGeneratePatern);
+            SpawnBalloonPatern(SettingManager.Instance.GameData.BalloonGeneratePatern);
         }
 
         private void DeleteBalloon(Balloon balloon)
         {
             _activeBalloons.Remove(balloon);
-            Destroy(balloon.gameObject);
-            SpawnBalloon(SettingManager.Instance.GameData.BalloonGeneratePatern);
+            LobbyManager.Instance.Runner.Despawn(balloon.Object);
+            SpawnBalloonPatern(SettingManager.Instance.GameData.BalloonGeneratePatern);
         }
 
         private enum Side
