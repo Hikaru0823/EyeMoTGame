@@ -16,9 +16,11 @@ namespace EyeMoT.Baloon
     public class GameManager : SceneSingleton<GameManager>
     {
         [Header("Resources")]
+        [SerializeField] private MovingPlayer _playerPrefab;
         [SerializeField] private TMP_Text _gameTimeText;
         [SerializeField] private TMP_Text _balloonCountText;
         [SerializeField] private Animator _resultPanel;
+        [SerializeField] private GameObject _retryButton;
         [SerializeField] private TabManager _mainTabManager;
 
         private bool _isStart = false;
@@ -27,11 +29,12 @@ namespace EyeMoT.Baloon
 
         void Start()
         {
-            BalloonSpawner.Instance.OnBalloonDestroyed += UpdateBalloonCount;
+            BalloonSpawnManager.Instance.OnBalloonDestroyed += UpdateBalloonCount;
             StartCoroutine(Init());
         }
         IEnumerator Init()
         {
+            _mainTabManager.OpenPanel("Title");
             BGMManager.Instance.Play(BGMPath.BALLOON_TITLE, volumeRate: 0.5f);
             yield return LobbyManager.Instance.SingleSessionRoutine();
             PreviewManager.Instance.SpawnPreviewBalloon();
@@ -64,16 +67,19 @@ namespace EyeMoT.Baloon
             _isStart = true;
 
             if(!LobbyManager.Instance.Runner.IsServer) return;
-            BalloonSpawner.Instance.SpawnInitialBalloons(SettingManager.Instance.GameData.BalloonGeneratePatern);
+            var player = LobbyManager.Instance.Runner.Spawn(_playerPrefab);
+            BalloonSpawnManager.Instance.SpawnVolume = player.GetComponentInChildren<BalloonVolume>().gameObject;
+            BalloonSpawnManager.Instance.SpawnInitialBalloons(SettingManager.Instance.GameData.BalloonGeneratePatern);
         }
 
         public void GameEnd()
         {
             _resultPanel.Play(StaticData.PANEL_FADE_IN);
+            _retryButton.SetActive(LobbyManager.Instance.Runner.GameMode == GameMode.Single);
             var totalDistance = HeatmapRenderer.Instance.StopHeatmap();
             HeatmapRenderer.Instance.VisibleHeatmap(true);
             _gameTimeText.text = "0.0s";
-            BalloonSpawner.Instance.ResetBalloons();
+            BalloonSpawnManager.Instance.ResetBalloons();
         }
 
         public void GameRestart()
@@ -92,7 +98,7 @@ namespace EyeMoT.Baloon
             HeatmapRenderer.Instance.VisibleHeatmap(false);
             BGMManager.Instance.Play(BGMPath.BALLOON_TITLE, volumeRate: 0.5f);
             _isStart = false;
-            BalloonSpawner.Instance.ResetBalloons();
+            BalloonSpawnManager.Instance.ResetBalloons();
 
             StartCoroutine(GameExitRoutine());
         }

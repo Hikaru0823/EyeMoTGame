@@ -58,6 +58,7 @@ MonoBehaviour:
   _shakeOnHit: 1
   _shakeStrength: 0.03
   _shakeSpeed: 40
+  _NetworkedColor: {r: 0, g: 0, b: 0, a: 0}
 --- !u!136 &4116788698675896300
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -121,7 +122,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   SortKey: 3232897548
-  ObjectInterest: 1
+  ObjectInterest: 0
   Flags: 262145
   NestedObjects: []
   NetworkedBehaviours:

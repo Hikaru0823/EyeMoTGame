@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using EyeMoT.Baloon;
+using EyeMoT.Fusion;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,7 +26,7 @@ public class PreviewManager : SceneSingleton<PreviewManager>
     public void SpawnPreviewBalloon()
     {
         var offset = Vector3.forward * 2.45f + Vector3.up * 0.3f;
-        _previewBalloon = BalloonSpawner.Instance.SpawnPreviewBalloon(transform.position + offset, Vector3.zero);
+        _previewBalloon = BalloonSpawnManager.Instance.SpawnPreviewBalloon(transform.position + offset, Vector3.zero);
         _previewBalloon.VisibleCollision(true);
         foreach(Transform obj in _previewBalloon.transform)
         {
@@ -48,12 +49,11 @@ public class PreviewManager : SceneSingleton<PreviewManager>
         _previewImage.gameObject.SetActive(_items[_newItemIndex].ActivePreviewCamera);
         _description.text = _items[_newItemIndex].Description;
 
+        _previewBalloon.EffectEnable = false;
         ResetBalloon();
-        switch(newItem)
+        if(newItem == "Interaction")
         {
-            case "Interaction":
-                _balloonDestroy = StartCoroutine(BalloonDestroyRoutine(0.5f));
-                break;
+            _balloonDestroy = StartCoroutine(BalloonDestroyRoutine(0.5f));
         }
     }
 
@@ -73,13 +73,13 @@ public class PreviewManager : SceneSingleton<PreviewManager>
         _previewBalloon.UpdateData();
     }
 
-    private void ResetBalloon()
+    private void ResetBalloon(string newItem = "")
     {
         if(_balloonDestroy != null)
             StopCoroutine(_balloonDestroy);
 
-        if(_previewBalloon != null)
-            Destroy(_previewBalloon.gameObject);
+        if(_previewBalloon != null && _previewBalloon.HasStateAuthority)
+            LobbyManager.Instance.Runner.Despawn(_previewBalloon.Object);
         SpawnPreviewBalloon();
     }
 
@@ -102,24 +102,16 @@ public class PreviewManager : SceneSingleton<PreviewManager>
             case BGColor.Default:
                 _thisCamera.clearFlags = CameraClearFlags.Skybox;
                 _thisCamera.cullingMask |= (1 << stageLayer);
-                Camera.main.clearFlags = CameraClearFlags.Skybox;
-                Camera.main.cullingMask |= (1 << stageLayer);
                 break;
             case BGColor.White:
                 _thisCamera.clearFlags = CameraClearFlags.SolidColor;
                 _thisCamera.backgroundColor = Color.white;
                 _thisCamera.cullingMask &= ~(1 << stageLayer);
-                Camera.main.clearFlags = CameraClearFlags.SolidColor;
-                Camera.main.backgroundColor = Color.white;
-                Camera.main.cullingMask &= ~(1 << stageLayer);
                 break;
             case BGColor.Black:
                 _thisCamera.clearFlags = CameraClearFlags.SolidColor;
                 _thisCamera.backgroundColor = Color.black;
                 _thisCamera.cullingMask &= ~(1 << stageLayer);
-                Camera.main.clearFlags = CameraClearFlags.SolidColor;
-                Camera.main.backgroundColor = Color.black;
-                Camera.main.cullingMask &= ~(1 << stageLayer);
                 break;
         }
     }

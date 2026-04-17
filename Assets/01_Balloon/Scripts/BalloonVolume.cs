@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using EyeMoT.Fusion;
 using UnityEngine;
 
 namespace EyeMoT.Baloon
@@ -25,9 +26,10 @@ namespace EyeMoT.Baloon
             {
                 // バルーンが範囲から出たときの処理
                 Balloon balloon = other.GetComponent<Balloon>();
-                if (balloon != null)
+                if (balloon != null && LobbyManager.Instance.Runner.IsServer)
                 {
                     onBalloonExited?.Invoke(balloon);
+                    BalloonSpawnManager.Instance.DeleteBalloon(balloon);
                 }
             }
         }

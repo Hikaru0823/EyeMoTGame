@@ -34,6 +34,7 @@ namespace EyeMoT.Baloon
         [Networked] private float NetworkedMoveSpeed { get; set; }
         [Networked, OnChangedRender(nameof(OnColorChanged))]
         public Color NetworkedColor { get; set; }
+        public bool EffectEnable = true;
 
         #region default paramaters
         private Vector3 _defaultVisualScale;
@@ -58,6 +59,12 @@ namespace EyeMoT.Baloon
             OnColorChanged();
         }
 
+        public override void Despawned(NetworkRunner runner, bool hasState)
+        {
+            if(!EffectEnable) return;
+            BalloonSpawnManager.Instance.PlayDestroyEffects(transform.position);
+        }
+
         void Update()
         {
             if (IsNetworkSpawned)
@@ -71,6 +78,21 @@ namespace EyeMoT.Baloon
             TickBalloon(Runner.DeltaTime, Object.HasStateAuthority);
         }
 
+        public override void Render()
+        {
+            if (_balloonVisual == null)
+                return;
+
+            if (!CurrentIsHit)
+            {
+                ApplyShakeOffset(Vector3.zero);
+                return;
+            }
+
+            // HitTime は Networked なので全端末でだいたい揃う
+            ApplyShakeOffset(GetShakeOffset(CurrentHitTime));
+        }
+
         private void TickBalloon(float deltaTime, bool canExpire)
         {
             if (!CurrentIsHit)
@@ -81,20 +103,11 @@ namespace EyeMoT.Baloon
 
             AddHitTime(deltaTime);
 
-            if (_shakeOnHit)
-                ApplyShakeOffset(GetShakeOffset());
-            else
-                ApplyShakeOffset(Vector3.zero);
-
             if (canExpire && CurrentHitTime >= CurrentLifeTime)
             {   
                 _onLifeTimeExpired?.Invoke(this);
+                BalloonSpawnManager.Instance.DestroyBalloon(this);
             }
-        }
-
-        public void Initialize(Action<Balloon> onLifeTimeExpired)
-        {
-            _onLifeTimeExpired += onLifeTimeExpired;
         }
 
         public void StartMove(Vector3 targetDirection, float moveSpeed)
@@ -109,6 +122,7 @@ namespace EyeMoT.Baloon
 
         public void StartBalloonDestroy(float lifeTime)
         {
+            EffectEnable = true;
             _lifeTime = lifeTime;
             SetLifeTime(lifeTime);
             SetHitState(true);
@@ -278,9 +292,9 @@ namespace EyeMoT.Baloon
             _balloonVisual.transform.localPosition = _balloonVisualDefaultLocalPosition + offset;
         }
 
-        private Vector3 GetShakeOffset()
+        private Vector3 GetShakeOffset(float t)
         {
-            float time = Time.time * _shakeSpeed;
+            float time = t * _shakeSpeed;
             return new Vector3(
                 Mathf.PerlinNoise(time, 0f) - 0.5f,
                 Mathf.PerlinNoise(0f, time) - 0.5f,

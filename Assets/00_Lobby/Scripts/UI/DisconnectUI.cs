@@ -78,7 +78,7 @@ public class DisconnectUI : MonoBehaviour
 			case ShutdownReason.ServerInRoom:
 				return ("ルーム使用中", "そのルームは既に使用されています。別のルームを試すか、しばらく待ってください。");
 			case ShutdownReason.DisconnectedByPluginLogic:
-				return ("プラグインにより切断", "キックされました。ルームが閉じられた可能性があります");
+				return ("切断", "キックされました。ルームが閉じられた可能性があります");
 			case ShutdownReason.GameClosed:
 				return ("ゲーム終了", "セッションに参加できません。ゲームが終了しています");
 			case ShutdownReason.GameNotFound:

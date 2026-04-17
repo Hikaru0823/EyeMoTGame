@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace EyeMoT.Baloon
 {
-    public class BalloonSpawner : SceneSingleton<BalloonSpawner>
+    public class BalloonSpawnManager : SceneSingleton<BalloonSpawnManager>
     {
         #region Singleton
 
@@ -22,7 +22,6 @@ namespace EyeMoT.Baloon
 
         [Header("Resources")]
         [SerializeField] private Balloon _balloonPrefab;
-        [SerializeField] private GameObject _spawnVolume;
         [SerializeField] private GameObject _destroyEffectPrefab;
         [SerializeField] private VFXHolder _vfxHolder;
 
@@ -32,13 +31,9 @@ namespace EyeMoT.Baloon
         [SerializeField] private float _offsetFromVolumeEdge = 1.1f;
 
         private readonly List<Balloon> _activeBalloons = new List<Balloon>();
+        public GameObject SpawnVolume;
         public int BalloonCount => _activeBalloons.Count;
         public Action OnBalloonDestroyed;
-
-        void Start()
-        {
-            _spawnVolume.GetComponent<BalloonVolume>().onBalloonExited += DeleteBalloon;
-        }
 
         public void SpawnInitialBalloons(GenerationPatern patern)
         {
@@ -51,8 +46,8 @@ namespace EyeMoT.Baloon
         {
             Balloon newBalloon = LobbyManager.Instance.Runner.Spawn(_balloonPrefab, spawnPosition, Quaternion.Euler(spawnRotation), onBeforeSpawned: (runner, obj) => {
                         obj.GetComponent<Balloon>().NetworkedColor = randomColor ? new Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value) : Color.red;
+                        obj.GetComponent<Balloon>().EffectEnable = false;
                     });
-            newBalloon.Initialize(DestroyBalloon);
             return newBalloon;
         }
 
@@ -77,14 +72,12 @@ namespace EyeMoT.Baloon
                         obj.GetComponent<Balloon>().NetworkedColor = randomColor;
                     });
                     newBalloon.StartMove(spawnData.MoveTargetDirection, _balloonSpeed);
-                    newBalloon.Initialize( DestroyBalloon);
                     _activeBalloons.Add(newBalloon);
                     break;
                 case GenerationPatern.Fix:
-                    Balloon newBalloon_fix = LobbyManager.Instance.Runner.Spawn(_balloonPrefab, GetRandomPositionWithinVolume(_spawnVolume), randomRotate, onBeforeSpawned: (runner, obj) => {
+                    Balloon newBalloon_fix = LobbyManager.Instance.Runner.Spawn(_balloonPrefab, GetRandomPositionWithinVolume(SpawnVolume), randomRotate, onBeforeSpawned: (runner, obj) => {
                         obj.GetComponent<Balloon>().NetworkedColor = randomColor;
                     });
-                    newBalloon_fix.Initialize( DestroyBalloon);
                     newBalloon_fix.GetComponent<NetworkRigidbody3D>().RBIsKinematic = true;
                     _activeBalloons.Add(newBalloon_fix);
                     break;
@@ -109,11 +102,11 @@ namespace EyeMoT.Baloon
             if (!spawnSide.HasValue)
                 spawnSide = (Side)UnityEngine.Random.Range(0, 4);
 
-            Vector3 spawnPosition = GetPositionWithinVolume(spawnSide.Value, _spawnVolume);
+            Vector3 spawnPosition = GetPositionWithinVolume(spawnSide.Value, SpawnVolume);
             Side randomTargetSide = GetRandomSideExcept(spawnSide.Value);
             Side diagonalSide = GetDiagonalSide(randomTargetSide, spawnSide.Value, spawnPosition);
             TargetSideInfo targetSideInfo = new TargetSideInfo(diagonalSide, _offsetFromVolumeEdge);
-            Vector3 targetPosition = GetPositionWithinVolume(randomTargetSide, _spawnVolume, targetSideInfo);
+            Vector3 targetPosition = GetPositionWithinVolume(randomTargetSide, SpawnVolume, targetSideInfo);
             Vector3 moveTargetDirection = (targetPosition - spawnPosition).normalized;
 
             return new BalloonSpawnData(spawnPosition, moveTargetDirection);
@@ -141,7 +134,7 @@ namespace EyeMoT.Baloon
             {
                 case Side.Left:
                 case Side.Right:
-                    opposedSide = spawnPosition.y > _spawnVolume.transform.position.y ? Side.Up : Side.Down;
+                    opposedSide = spawnPosition.y > SpawnVolume.transform.position.y ? Side.Up : Side.Down;
                     if((int)targetSide % 2 == 1)
                     {
                         diagonalSide = (Side)(((int)spawnSide + 2) % 4);
@@ -151,7 +144,7 @@ namespace EyeMoT.Baloon
                     break;
                 case Side.Up:
                 case Side.Down:
-                    opposedSide = spawnPosition.x > _spawnVolume.transform.position.x ? Side.Right : Side.Left;
+                    opposedSide = spawnPosition.x > SpawnVolume.transform.position.x ? Side.Right : Side.Left;
                     if((int)targetSide % 2 == 0)
                     {
                         diagonalSide = (Side)(((int)spawnSide + 2) % 4);
@@ -198,22 +191,32 @@ namespace EyeMoT.Baloon
             return result;
         }
 
-        private void DestroyBalloon(Balloon balloon)
+        public void DestroyBalloon(Balloon balloon)
         {
-            if(!_vfxHolder.TryGet(SettingManager.Instance.BalloonData.VFXIdx, out var effect)) return;
+            if (!balloon.Object.HasStateAuthority) return;
 
-            Instantiate(effect.Object, balloon.transform.position, effect.Object.transform.rotation);
-            SEManager.Instance.Play(effect.CurrentSEPath); 
             _activeBalloons.Remove(balloon);
-            OnBalloonDestroyed?.Invoke();
             LobbyManager.Instance.Runner.Despawn(balloon.Object);
 
-            if(_activeBalloons.Count <= 0) return;
-            SpawnBalloonPatern(SettingManager.Instance.GameData.BalloonGeneratePatern);
+            if (_activeBalloons.Count > 0)
+            {
+                SpawnBalloonPatern(SettingManager.Instance.GameData.BalloonGeneratePatern);
+            }
         }
 
-        private void DeleteBalloon(Balloon balloon)
+        public void PlayDestroyEffects(Vector3 pos)
         {
+            if (!_vfxHolder.TryGet(SettingManager.Instance.BalloonData.VFXIdx, out var effect))
+                return;
+
+            Instantiate(effect.Object, pos, effect.Object.transform.rotation);
+            SEManager.Instance.Play(effect.CurrentSEPath);
+            OnBalloonDestroyed?.Invoke();
+        }
+
+        public void DeleteBalloon(Balloon balloon)
+        {
+            if(!LobbyManager.Instance.Runner.IsServer) return;
             _activeBalloons.Remove(balloon);
             LobbyManager.Instance.Runner.Despawn(balloon.Object);
             SpawnBalloonPatern(SettingManager.Instance.GameData.BalloonGeneratePatern);
