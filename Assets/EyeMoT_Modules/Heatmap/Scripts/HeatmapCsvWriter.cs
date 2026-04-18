@@ -6,7 +6,7 @@ namespace EyeMoT.Heatmap
     public class HeatmapCsvWriter
     {
         /// <summary>
-        /// data format: List of [time, uv.x, uv.y]
+        /// data format: List of [time, uv.x, uv.y, sourceId]
         /// </summary>
         /// <param name="path"></param>
         /// <param name="uvList"></param>
@@ -26,7 +26,7 @@ namespace EyeMoT.Heatmap
             writeData.Add(new string[] { date.ToString("yyyy/MM/dd HH:mm:ss"), totalDistance.ToString("F1") });
             writeData.Add(new string[] { "#Screen_X", "Screen_Y", "GazeDataCount" });
             writeData.Add(new string[] { Screen.width.ToString(), Screen.height.ToString(), data.Count.ToString() });
-            writeData.Add(new string[] { "#GameTime", "Gaze_X", "Gaze_Y" });
+            writeData.Add(new string[] { "#GameTime", "Gaze_X", "Gaze_Y"});
             writeData.AddRange(data);
             csvManager.CSVWrite(writeData, path + Application.productName + "_" + date.ToString("yyyyMMddHHmmss") + ".csv", isAppend: false);
 

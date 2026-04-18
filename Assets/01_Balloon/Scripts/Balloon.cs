@@ -57,6 +57,7 @@ namespace EyeMoT.Baloon
             if (Object.HasStateAuthority)
                 NetworkedLifeTime = _lifeTime;
             OnColorChanged();
+            VisibleCollision(true);
         }
 
         public override void Despawned(NetworkRunner runner, bool hasState)

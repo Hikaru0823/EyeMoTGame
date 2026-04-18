@@ -44,6 +44,12 @@ namespace EyeMoT.Fusion
 
         public override void Spawned()
         {
+            if(LobbyManager.Instance.Runner.GameMode == GameMode.Single)
+            {
+                Team = PlayerRegistry.TeamState.TeamA;
+                PlayerRegistry.Server_Add(Runner, Object.InputAuthority, this);
+            }
+            
             if (Object.HasInputAuthority)
             {
                 Local = this;

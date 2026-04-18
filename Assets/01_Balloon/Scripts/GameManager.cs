@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using EyeMoT.Fusion;
 using EyeMoT.Heatmap;
 using Fusion;
@@ -16,7 +17,7 @@ namespace EyeMoT.Baloon
     public class GameManager : SceneSingleton<GameManager>
     {
         [Header("Resources")]
-        [SerializeField] private MovingPlayer _playerPrefab;
+        [SerializeField] private PlayerContent _playerPrefab;
         [SerializeField] private TMP_Text _gameTimeText;
         [SerializeField] private TMP_Text _balloonCountText;
         [SerializeField] private Animator _resultPanel;
@@ -67,7 +68,17 @@ namespace EyeMoT.Baloon
             _isStart = true;
 
             if(!LobbyManager.Instance.Runner.IsServer) return;
+
+            int[] indices = LobbyManager.Instance.Runner.GameMode == GameMode.Single
+                ? new int[] { 0 }
+                : PlayerRegistry.Players
+                    .Where(kvp => kvp.Team == PlayerRegistry.TeamState.TeamA && kvp.IndexByTeam != 255)
+                    .OrderBy(kvp => kvp.IndexByTeam)
+                    .Select(kvp => (int)kvp.IndexByTeam)
+                    .ToArray();
+
             var player = LobbyManager.Instance.Runner.Spawn(_playerPrefab);
+            player.RPC_SetPlayer(indices);
             BalloonSpawnManager.Instance.SpawnVolume = player.GetComponentInChildren<BalloonVolume>().gameObject;
             BalloonSpawnManager.Instance.SpawnInitialBalloons(SettingManager.Instance.GameData.BalloonGeneratePatern);
         }

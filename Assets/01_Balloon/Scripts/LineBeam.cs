@@ -1,4 +1,5 @@
 using Fusion;
+using EyeMoT.Fusion;
 using KanKikuchi.AudioManager;
 using UnityEngine;
 
@@ -40,6 +41,7 @@ namespace EyeMoT.Baloon
 
         public override void Spawned()
         {
+            if (!Object.HasInputAuthority && !Object.HasStateAuthority) return;
             InitializeComponents();
             ApplyNetworkedVisuals();
         }
@@ -51,8 +53,12 @@ namespace EyeMoT.Baloon
 
         public override void FixedUpdateNetwork()
         {
-            if (Object.HasStateAuthority)
-                UpdateLineBeam(true);
+            if (!Object.HasStateAuthority) return;
+
+            if (GetInput(out EyeMoTNetworkInput input) && input.HasMouse)
+                UpdateLineBeam(true, input.MouseUV);
+            else
+                ClearLineBeam(true);
         }
 
         public override void Render()
@@ -82,12 +88,12 @@ namespace EyeMoT.Baloon
                 _targetImage.SetActive(false);
         }
 
-        private void UpdateLineBeam(bool canNotifyBalloon)
+        private void UpdateLineBeam(bool canNotifyBalloon, Vector2 mouseUV)
         {
             if (_lineRenderer == null || _targetCamera == null)
                 return;
 
-            Ray ray = _targetCamera.ScreenPointToRay(Input.mousePosition);
+            Ray ray = _targetCamera.ViewportPointToRay(new Vector3(mouseUV.x, mouseUV.y, 0f));
             bool hasRaycastHit = Physics.Raycast(ray, out RaycastHit hit);
 
             bool hasHitTarget = hasRaycastHit && hit.collider.CompareTag(_targetTag);
@@ -137,6 +143,23 @@ namespace EyeMoT.Baloon
                 NetworkedTargetImagePosition = _targetImage != null ? _targetImage.transform.position : _endPoint;
                 NetworkedTargetImageScale = _targetImage != null ? _targetImage.transform.localScale : Vector3.one;
             }
+        }
+
+        private void ClearLineBeam(bool canNotifyBalloon)
+        {
+            if (_currentBalloon != null)
+            {
+                OnMissTarget(canNotifyBalloon);
+                _currentBalloon = null;
+            }
+
+            if (_hasHitTarget)
+            {
+                _hasHitTarget = false;
+                OnHitTargetChanged(false);
+            }
+
+            SetLineVisible(false);
         }
 
         private void LookAtTarget(Vector3 position)

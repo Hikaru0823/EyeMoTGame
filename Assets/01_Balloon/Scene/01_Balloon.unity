@@ -4291,7 +4291,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1774ae09e5c443a9bef8bcfaf4204b1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _playerPrefab: {fileID: 0}
+  _playerPrefab: {fileID: 6046135775380138589, guid: a054dca216095094bbf5aab7d29efb11, type: 3}
   _gameTimeText: {fileID: 1597732604}
   _balloonCountText: {fileID: 1121796350}
   _resultPanel: {fileID: 1458383581}
@@ -7981,7 +7981,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 941429174}
   m_HandleRect: {fileID: 941429173}
   m_Direction: 2
-  m_Value: 1
+  m_Value: 0.9999964
   m_Size: 0.97384614
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -9146,7 +9146,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 847602604}
   m_HandleRect: {fileID: 847602603}
   m_Direction: 2
-  m_Value: 1
+  m_Value: 0.9999964
   m_Size: 0.97384614
   m_NumberOfSteps: 0
   m_OnValueChanged:

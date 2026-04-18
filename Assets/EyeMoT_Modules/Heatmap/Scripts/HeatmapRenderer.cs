@@ -74,6 +74,7 @@ namespace EyeMoT.Heatmap
             Debug.Log($"<color=orange>[HeatMap]</color> Start Recording.");
             _isStart = true;
             _dirName = dirName;
+            _hasPrev = false;
         }
 
         public float StopHeatmap(bool writeCsv = true)
@@ -108,7 +109,7 @@ namespace EyeMoT.Heatmap
             }
 
             float totalDistance = 0f;
-            Vector2? previousPoint = null;
+            Dictionary<string, Vector2> previousPointBySource = new Dictionary<string, Vector2>();
 
             foreach (var data in _dataList)
             {
@@ -124,12 +125,13 @@ namespace EyeMoT.Heatmap
                 }
 
                 Vector2 currentPoint = new Vector2(x, y);
-                if (previousPoint.HasValue)
+                string sourceId = data.Length >= 4 ? data[3] : string.Empty;
+                if (previousPointBySource.TryGetValue(sourceId, out Vector2 previousPoint))
                 {
-                    totalDistance += Vector2.Distance(previousPoint.Value, currentPoint);
+                    totalDistance += Vector2.Distance(previousPoint, currentPoint);
                 }
 
-                previousPoint = currentPoint;
+                previousPointBySource[sourceId] = currentPoint;
             }
 
             return totalDistance;
@@ -157,6 +159,8 @@ namespace EyeMoT.Heatmap
             if(!_isStart) return;
             if (_stampMaterial == null) return;
 
+            UpdateScreenSize();
+
             Vector2 uv;
             bool inside = TryGetMouseUV(out uv);
 
@@ -166,31 +170,13 @@ namespace EyeMoT.Heatmap
                 return;
             }
 
-            Graphics.Blit(_heatRT, _tempRT);
+            StampUV(uv, 0, ref _prevUV, ref _hasPrev);
+        }
 
-            _stampMaterial.SetTexture("_MainTex", _tempRT);
-            _stampMaterial.SetFloat("_Radius", _radius);
-            _stampMaterial.SetFloat("_Intensity", _intensity);
-
-            if (_hasPrev)
-            {
-                LineInterpolation(uv);
-            }
-            else
-            {
-                _stampMaterial.SetVector("_MouseUV", new Vector4(uv.x, uv.y, 0, 0));
-                Graphics.Blit(_tempRT, _heatRT, _stampMaterial);
-            }
-
-            _prevUV = uv;
-            _hasPrev = true;
-
-            if (_colorizeMaterial != null)
-            {
-                _colorizeMaterial.SetTexture("_MainTex", _heatRT);
-            }
-
-            _dataList.Add(new string[] { Time.time.ToString("F2"), (_screenWidth * uv.x).ToString("F0"), (_screenHeight * uv.y).ToString("F0") });
+        private void UpdateScreenSize()
+        {
+            _screenWidth = Mathf.Max(1, Screen.width);
+            _screenHeight = Mathf.Max(1, Screen.height);
         }
 
         bool TryGetMouseUV(out Vector2 uv)
@@ -206,9 +192,40 @@ namespace EyeMoT.Heatmap
             return true;
         }
 
-        private void  LineInterpolation(Vector2 uv)
+        private void StampUV(Vector2 uv, int sourceId, ref Vector2 prevUV, ref bool hasPrev)
         {
-            float dist = Vector2.Distance(_prevUV, uv);
+            Graphics.Blit(_heatRT, _tempRT);
+
+            _stampMaterial.SetTexture("_MainTex", _tempRT);
+            _stampMaterial.SetFloat("_Radius", _radius);
+            _stampMaterial.SetFloat("_Intensity", _intensity);
+            _stampMaterial.SetFloat("_Aspect", (float)_screenWidth / _screenHeight);
+
+            if (hasPrev)
+            {
+                LineInterpolation(prevUV, uv);
+            }
+            else
+            {
+                _stampMaterial.SetVector("_MouseUV", new Vector4(uv.x, uv.y, 0, 0));
+                Graphics.Blit(_tempRT, _heatRT, _stampMaterial);
+            }
+
+            prevUV = uv;
+            hasPrev = true;
+
+            if (_colorizeMaterial != null)
+            {
+                _colorizeMaterial.SetTexture("_MainTex", _heatRT);
+            }
+
+            _dataList.Add(new string[] { Time.time.ToString("F2"), (_screenWidth * uv.x).ToString("F0"), (_screenHeight * uv.y).ToString("F0"), sourceId.ToString() });
+        }
+
+        private void  LineInterpolation(Vector2 prevUV, Vector2 uv)
+        {
+            float aspect = (float)_screenWidth / _screenHeight;
+            float dist = Vector2.Distance(new Vector2(prevUV.x * aspect, prevUV.y), new Vector2(uv.x * aspect, uv.y));
 
             // どれくらい細かく補間するか（重要）
             int steps = Mathf.CeilToInt(dist / (_radius * 0.5f));
@@ -218,7 +235,7 @@ namespace EyeMoT.Heatmap
             for (int i = 0; i <= steps; i++)
             {
                 float t = (float)i / steps;
-                Vector2 lerpUV = Vector2.Lerp(_prevUV, uv, t);
+                Vector2 lerpUV = Vector2.Lerp(prevUV, uv, t);
 
                 _stampMaterial.SetVector("_MouseUV", new Vector4(lerpUV.x, lerpUV.y, 0, 0));
                 Graphics.Blit(_tempRT, _heatRT, _stampMaterial);

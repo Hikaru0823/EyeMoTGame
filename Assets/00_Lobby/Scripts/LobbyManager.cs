@@ -309,6 +309,7 @@ namespace EyeMoT.Fusion
         NetworkRunner CreateRunner(bool attachSpawnListener = false)
         {
             NetworkRunner runner = Instantiate(_runnerPrefab);
+            runner.ProvideInput = true;
             runner.AddCallbacks(this);
 
             if (attachSpawnListener)
@@ -586,10 +587,28 @@ namespace EyeMoT.Fusion
         { }
 
         public void OnInput(NetworkRunner runner, NetworkInput input)
-        { }
+        {
+            EyeMoTNetworkInput networkInput = new EyeMoTNetworkInput();
+            int width = Mathf.Max(1, Screen.width);
+            int height = Mathf.Max(1, Screen.height);
+            Vector3 mouse = Input.mousePosition;
+
+            networkInput.HasMouse = mouse.x >= 0f && mouse.x <= width && mouse.y >= 0f && mouse.y <= height;
+            networkInput.MouseUV = new Vector2(
+                Mathf.Clamp01(mouse.x / width),
+                Mathf.Clamp01(mouse.y / height));
+
+            input.Set(networkInput);
+        }
 
         public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input)
-        { }
+        {
+            input.Set(new EyeMoTNetworkInput
+            {
+                HasMouse = false,
+                MouseUV = new Vector2(0.5f, 0.5f)
+            });
+        }
 
         public void OnConnectedToServer(NetworkRunner runner)
         { }

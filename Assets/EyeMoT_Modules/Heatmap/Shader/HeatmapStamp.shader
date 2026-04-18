@@ -6,6 +6,7 @@ Shader "Custom/HeatmapStamp"
         _MouseUV ("Mouse UV", Vector) = (0.5, 0.5, 0, 0)
         _Radius ("Radius", Float) = 0.05
         _Intensity ("Intensity", Float) = 0.02
+        _Aspect ("Aspect", Float) = 1.0
     }
 
     SubShader
@@ -25,6 +26,7 @@ Shader "Custom/HeatmapStamp"
             float4 _MouseUV;
             float _Radius;
             float _Intensity;
+            float _Aspect;
 
             struct appdata
             {
@@ -50,7 +52,9 @@ Shader "Custom/HeatmapStamp"
             {
                 float prev = tex2D(_MainTex, i.uv).r;
 
-                float d = distance(i.uv, _MouseUV.xy);
+                float2 delta = i.uv - _MouseUV.xy;
+                delta.x *= _Aspect;
+                float d = length(delta);
                 float spot = 1.0 - smoothstep(0.0, _Radius, d);
 
                 float heat = prev + spot * _Intensity;
