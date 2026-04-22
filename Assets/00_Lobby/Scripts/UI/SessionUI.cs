@@ -18,8 +18,9 @@ namespace EyeMoT.Fusion
         private Transform[][] _playerItemParents;
         private Dictionary<PlayerRef, PlayerItemUI> _playerItems = new Dictionary<PlayerRef, PlayerItemUI>();
 
-        void RegisterEvents()
+        void Init()
         {
+            Reset();
             PlayerRegistry.OnPlayerRegistered -= OnPlayerRegistered;
             PlayerRegistry.OnPlayerRegistered += OnPlayerRegistered;
             PlayerRegistry.OnPlayerLeft -= OnPlayerLeft;
@@ -28,10 +29,8 @@ namespace EyeMoT.Fusion
 
         void Start()
         {
-            LobbyManager.OnInitAll -= RegisterEvents;
-            LobbyManager.OnInitAll += RegisterEvents;
-            LobbyManager.OnResetAll -= Reset;
-            LobbyManager.OnResetAll += Reset;
+            LobbyManager.OnInitAll -= Init;
+            LobbyManager.OnInitAll += Init;
 
             _playerItemParents = new Transform[_playerItemHolders.Length][];
 
@@ -56,6 +55,7 @@ namespace EyeMoT.Fusion
 
             var teamitem = GetPlayerItem(pRef, plObj.Team, plObj.IndexByTeam);
             teamitem.Init(pRef, plObj.Nickname);
+            teamitem.SetReady(plObj.IsReady);
             plObj.OnReadyStateChanged += () => teamitem.SetReady(plObj.IsReady);
         }
 

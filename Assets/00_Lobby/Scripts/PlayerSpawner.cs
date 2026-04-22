@@ -31,7 +31,7 @@ namespace EyeMoT.Fusion
             if (canDespawn)
             {
                 PlayerObject leavingPlayer = PlayerRegistry.GetPlayer(player);
-                Runner.Despawn(leavingPlayer.Object);
+                Runner?.Despawn(leavingPlayer.Object);
             }
         }
     }

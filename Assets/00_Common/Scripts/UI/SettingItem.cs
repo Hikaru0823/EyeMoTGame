@@ -4,13 +4,13 @@ using KanKikuchi.AudioManager;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace EyeMoT
+namespace EyeMoT.Balloon
 {
     public class SettingItem : MonoBehaviour, IPointerEnterHandler
     {
         [Header("Resources")]
         [SerializeField] private PreviewManager _previewManager;
-        [Header("Seting")]
+        [Header("Setting")]
         [SerializeField] private string _itemName;
 
         public void OnPointerEnter(PointerEventData eventData)

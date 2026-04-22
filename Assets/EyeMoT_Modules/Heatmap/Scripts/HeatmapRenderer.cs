@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Globalization;
+using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -25,7 +27,12 @@ namespace EyeMoT.Heatmap
         [SerializeField] private Material _stampMaterial;
         [SerializeField] private Material _colorizeMaterial;
         [SerializeField] private RawImage _previewImage;
-        public void VisibleHeatmap(bool isVisible) => _previewImage.enabled = isVisible;
+        public void VisibleHeatmap(bool isVisible, RenderTexture heatmapTexture = null)
+        {
+            if(isVisible)
+                _previewImage.texture = heatmapTexture != null ? heatmapTexture : _heatRT;
+            _previewImage.enabled = isVisible;
+        }
 
         [Header("Settings")]
         [SerializeField] private int _textureSize = 512;
@@ -42,6 +49,7 @@ namespace EyeMoT.Heatmap
         private Vector2 _prevUV;
         private bool _hasPrev = false;
         private bool _isStart = false;
+        private bool _isDynamicDraw = false;
         private int _screenWidth;
         private int _screenHeight;
         private string _dirName = "";
@@ -69,36 +77,57 @@ namespace EyeMoT.Heatmap
             }
         }
 
-        public void StartHeatmap(string dirName = "")
+        public void StartHeatmap(string dirName = "", bool isDynamicDraw = false)
         {
             Debug.Log($"<color=orange>[HeatMap]</color> Start Recording.");
             _isStart = true;
             _dirName = dirName;
             _hasPrev = false;
+            _isDynamicDraw = isDynamicDraw;
+            _previewImage.texture = _heatRT;
         }
 
-        public float StopHeatmap(bool writeCsv = true)
+        public HeatmapResult StopHeatmap(bool writeCsv = true, Action<RenderTexture> onComplete = null)
         {
             Debug.Log($"<color=orange>[HeatMap]</color> Stop Recording.");
             _isStart = false;
             var totalDistance = GetTotalGazeDistance();
 
+            var result = new HeatmapResult
+            {
+                TotalDistance = totalDistance,
+                DataList = new List<string[]>(_dataList),
+                HeatmapTexture = _heatRT,
+            };
+
+            if(!_isDynamicDraw)
+            {
+                if (onComplete != null)
+                {
+                    CreateHeatmapFromDataListAsync(result.DataList, onComplete);
+                }
+            }
+            else
+            {
+                onComplete?.Invoke(result.HeatmapTexture);
+            }
+
             if(!writeCsv)
             {
                 _dataList.Clear();
-                return totalDistance;
+                return result;
             }
 
             #if UNITY_WEBGL && !UNITY_EDITOR
             _dataList.Clear();
-            return totalDistance;
+            return result;
             #endif
 
-            HeatmapCsvWriter.WriteCsv(System.IO.Path.GetDirectoryName(Application.dataPath) + _saveDir + (_dirName == "" ? "" : $"{_dirName}/"), totalDistance, _dataList);
+            HeatmapCsvWriter.WriteCsv(System.IO.Path.GetDirectoryName(Application.dataPath) + _saveDir + (_dirName == "" ? "" : $"{_dirName}/"), totalDistance, new List<string[]>(_dataList));
             Debug.Log($"<color=orange>[HeatMap]</color> Data saved to: {System.IO.Path.GetDirectoryName(Application.dataPath) + _saveDir + (_dirName == "" ? "" : $"/{_dirName}/")}");
             _dataList.Clear();
 
-            return totalDistance;
+            return result;
         }
 
         public float GetTotalGazeDistance()
@@ -137,6 +166,68 @@ namespace EyeMoT.Heatmap
             return totalDistance;
         }
 
+        public Coroutine CreateHeatmapFromDataListAsync(List<string[]> dataList, Action<RenderTexture> onComplete, int pointsPerFrame = 64)
+        {
+            return StartCoroutine(CreateHeatmapFromDataListRoutine(dataList, onComplete, pointsPerFrame));
+        }
+
+        private IEnumerator CreateHeatmapFromDataListRoutine(List<string[]> dataList, Action<RenderTexture> onComplete, int pointsPerFrame)
+        {
+            RenderTexture previousActive = RenderTexture.active;
+            RenderTexture heatRT = CreateRT(_textureSize);
+            RenderTexture tempRT = CreateRT(_textureSize);
+            pointsPerFrame = Mathf.Max(1, pointsPerFrame);
+
+            try
+            {
+                ClearRT(heatRT);
+                ClearRT(tempRT);
+
+                if (dataList != null && _stampMaterial != null)
+                {
+                    UpdateScreenSize();
+
+                    int processedThisFrame = 0;
+                    Dictionary<string, Vector2> previousUVBySource = new Dictionary<string, Vector2>();
+                    HashSet<string> hasPreviousBySource = new HashSet<string>();
+
+                    foreach (string[] data in dataList)
+                    {
+                        if (!TryParseHeatmapData(data, out Vector2 uv, out string sourceId))
+                        {
+                            continue;
+                        }
+
+                        bool hasPrev = hasPreviousBySource.Contains(sourceId);
+                        Vector2 prevUV = hasPrev ? previousUVBySource[sourceId] : Vector2.zero;
+
+                        StampUVToHeatmap(heatRT, tempRT, uv, ref prevUV, ref hasPrev);
+
+                        previousUVBySource[sourceId] = prevUV;
+                        if (hasPrev)
+                        {
+                            hasPreviousBySource.Add(sourceId);
+                        }
+
+                        processedThisFrame++;
+                        if (processedThisFrame >= pointsPerFrame)
+                        {
+                            processedThisFrame = 0;
+                            RenderTexture.active = previousActive;
+                            yield return null;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                RenderTexture.active = previousActive;
+                tempRT.Release();
+            }
+
+            onComplete?.Invoke(heatRT);
+        }
+
         RenderTexture CreateRT(int size)
         {
             var rt = new RenderTexture(size, size, 0, RenderTextureFormat.ARGB32);
@@ -163,6 +254,8 @@ namespace EyeMoT.Heatmap
 
             Vector2 uv;
             bool inside = TryGetMouseUV(out uv);
+            _dataList.Add(new string[] { Time.time.ToString("F2"), (_screenWidth * uv.x).ToString("F0"), (_screenHeight * uv.y).ToString("F0")});
+            if(!_isDynamicDraw) return;
 
             if (!inside)
             {
@@ -170,7 +263,7 @@ namespace EyeMoT.Heatmap
                 return;
             }
 
-            StampUV(uv, 0, ref _prevUV, ref _hasPrev);
+            StampUV(uv, ref _prevUV, ref _hasPrev);
         }
 
         private void UpdateScreenSize()
@@ -192,37 +285,74 @@ namespace EyeMoT.Heatmap
             return true;
         }
 
-        private void StampUV(Vector2 uv, int sourceId, ref Vector2 prevUV, ref bool hasPrev)
+        private void StampUV(Vector2 uv, ref Vector2 prevUV, ref bool hasPrev)
         {
-            Graphics.Blit(_heatRT, _tempRT);
+            StampUVToHeatmap(uv, ref prevUV, ref hasPrev);
+            _dataList.Add(new string[] { Time.time.ToString("F2"), (_screenWidth * uv.x).ToString("F0"), (_screenHeight * uv.y).ToString("F0")});
+        }
 
-            _stampMaterial.SetTexture("_MainTex", _tempRT);
+        private void StampUVToHeatmap(Vector2 uv, ref Vector2 prevUV, ref bool hasPrev)
+        {
+            StampUVToHeatmap(_heatRT, _tempRT, uv, ref prevUV, ref hasPrev);
+        }
+
+        private void StampUVToHeatmap(RenderTexture heatRT, RenderTexture tempRT, Vector2 uv, ref Vector2 prevUV, ref bool hasPrev)
+        {
+            Graphics.Blit(heatRT, tempRT);
+
+            _stampMaterial.SetTexture("_MainTex", tempRT);
             _stampMaterial.SetFloat("_Radius", _radius);
             _stampMaterial.SetFloat("_Intensity", _intensity);
             _stampMaterial.SetFloat("_Aspect", (float)_screenWidth / _screenHeight);
 
             if (hasPrev)
             {
-                LineInterpolation(prevUV, uv);
+                LineInterpolation(heatRT, tempRT, prevUV, uv);
             }
             else
             {
                 _stampMaterial.SetVector("_MouseUV", new Vector4(uv.x, uv.y, 0, 0));
-                Graphics.Blit(_tempRT, _heatRT, _stampMaterial);
+                Graphics.Blit(tempRT, heatRT, _stampMaterial);
             }
 
             prevUV = uv;
             hasPrev = true;
 
-            if (_colorizeMaterial != null)
+            if (_colorizeMaterial != null && heatRT == _heatRT)
             {
-                _colorizeMaterial.SetTexture("_MainTex", _heatRT);
+                _colorizeMaterial.SetTexture("_MainTex", heatRT);
+            }
+        }
+
+        private bool TryParseHeatmapData(string[] data, out Vector2 uv, out string sourceId)
+        {
+            uv = Vector2.zero;
+            sourceId = string.Empty;
+
+            if (data == null || data.Length < 3)
+            {
+                return false;
             }
 
-            _dataList.Add(new string[] { Time.time.ToString("F2"), (_screenWidth * uv.x).ToString("F0"), (_screenHeight * uv.y).ToString("F0"), sourceId.ToString() });
+            if (!float.TryParse(data[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float x) ||
+                !float.TryParse(data[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float y))
+            {
+                return false;
+            }
+
+            uv = new Vector2(
+                Mathf.Clamp01(x / _screenWidth),
+                Mathf.Clamp01(y / _screenHeight));
+            sourceId = data.Length >= 4 ? data[3] : string.Empty;
+            return true;
         }
 
         private void  LineInterpolation(Vector2 prevUV, Vector2 uv)
+        {
+            LineInterpolation(_heatRT, _tempRT, prevUV, uv);
+        }
+
+        private void  LineInterpolation(RenderTexture heatRT, RenderTexture tempRT, Vector2 prevUV, Vector2 uv)
         {
             float aspect = (float)_screenWidth / _screenHeight;
             float dist = Vector2.Distance(new Vector2(prevUV.x * aspect, prevUV.y), new Vector2(uv.x * aspect, uv.y));
@@ -238,10 +368,10 @@ namespace EyeMoT.Heatmap
                 Vector2 lerpUV = Vector2.Lerp(prevUV, uv, t);
 
                 _stampMaterial.SetVector("_MouseUV", new Vector4(lerpUV.x, lerpUV.y, 0, 0));
-                Graphics.Blit(_tempRT, _heatRT, _stampMaterial);
+                Graphics.Blit(tempRT, heatRT, _stampMaterial);
 
                 // 次のスタンプのために更新
-                Graphics.Blit(_heatRT, _tempRT);
+                Graphics.Blit(heatRT, tempRT);
             }
         }
 
@@ -264,5 +394,12 @@ namespace EyeMoT.Heatmap
                 StopHeatmap();
             }
         }
+    }
+
+    public class HeatmapResult
+    {
+        public float TotalDistance;
+        public List<string[]> DataList;
+        public RenderTexture HeatmapTexture;
     }
 }

@@ -5,7 +5,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using EyeMoT.Fusion;
-using EyeMoT.Baloon;
 
 public class DisconnectUI : MonoBehaviour
 {
@@ -26,7 +25,15 @@ public class DisconnectUI : MonoBehaviour
 			return;
 		}
 		Instance = this;
-		_closeButton.onClick.AddListener(CloseButton);
+	}
+
+	void Start()
+	{
+		_closeButton.onClick.AddListener(() =>
+		{
+			Instance._ui.enabled = false;
+			LobbyManager.Instance.Quit();
+		});
 	}
 
 	public static void OnShutdown(ShutdownReason reason)
@@ -146,14 +153,8 @@ public class DisconnectUI : MonoBehaviour
 			case NetDisconnectReason.ByRemote:
 				return ("リモートによる切断", "");
 			default:
-				Debug.LogWarning($"不明なNetConnectFailedReason {reason}");
-				return ("不明な接続失敗", $"{(int)reason}");
+				Debug.LogWarning($"不明なNetDisconnectReason {reason}");
+				return ("不明な切断理由", $"{(int)reason}");
 		}
-	}
-
-	private void CloseButton()
-	{
-		_ui.enabled = false;
-		StartCoroutine(GameManager.Instance.GameExitRoutine());
 	}
 }

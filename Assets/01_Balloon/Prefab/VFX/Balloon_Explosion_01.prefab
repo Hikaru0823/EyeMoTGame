@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 725748389098120095}
   - component: {fileID: 725748389098120093}
   - component: {fileID: 725748389098120094}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Circle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4910,7 +4910,7 @@ GameObject:
   m_Component:
   - component: {fileID: 725748389192728892}
   - component: {fileID: 725748389192728893}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Point Light
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5006,7 +5006,7 @@ GameObject:
   - component: {fileID: 725748389856807712}
   - component: {fileID: 725748389856807713}
   - component: {fileID: 725748389856807726}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Balloon_Explosion_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9902,7 +9902,7 @@ GameObject:
   - component: {fileID: 725748390055121425}
   - component: {fileID: 725748390055121439}
   - component: {fileID: 725748390055121424}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Smoke
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14622,7 +14622,7 @@ GameObject:
   - component: {fileID: 725748390129463917}
   - component: {fileID: 725748390129463915}
   - component: {fileID: 725748390129463916}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Sparks small
   m_TagString: Untagged
   m_Icon: {fileID: 0}

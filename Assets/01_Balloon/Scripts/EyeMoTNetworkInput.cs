@@ -1,11 +1,12 @@
 using Fusion;
 using UnityEngine;
 
-namespace EyeMoT.Fusion
+namespace EyeMoT.Balloon
 {
-    public struct EyeMoTNetworkInput : INetworkInput
+    public struct BalloonNetworkInput : INetworkInput
     {
         public NetworkBool HasMouse;
         public Vector2 MouseUV;
+        public float ScreenAspect;
     }
 }

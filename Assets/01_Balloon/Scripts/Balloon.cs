@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
+using EyeMoT.Fusion;
 using Fusion;
 using Fusion.Addons.Physics;
 using KanKikuchi.AudioManager;
 using UnityEngine;
 
-namespace EyeMoT.Baloon
+namespace EyeMoT.Balloon
 {
     public class Balloon : NetworkBehaviour
     {
@@ -21,20 +23,18 @@ namespace EyeMoT.Baloon
         [SerializeField] private float _shakeSpeed = 40f;
 
         private Action<Balloon> _onLifeTimeExpired;
-        private bool _isHit = false;
-        private float _hitTime = 0f;
         private Vector3 _moveTargetDirection;
         private float _moveSpeed;
         private Vector3 _balloonVisualDefaultLocalPosition;
+        private readonly HashSet<PlayerRef> _hitSources = new HashSet<PlayerRef>();
 
         [Networked] private NetworkBool IsHit { get; set; }
         [Networked] private float HitTime { get; set; }
         [Networked] private float NetworkedLifeTime { get; set; }
-        [Networked] private Vector3 NetworkedMoveTargetDirection { get; set; }
-        [Networked] private float NetworkedMoveSpeed { get; set; }
+
         [Networked, OnChangedRender(nameof(OnColorChanged))]
         public Color NetworkedColor { get; set; }
-        public bool EffectEnable = true;
+        [Networked] private bool _effectEnable { get; set; } = false;
 
         #region default paramaters
         private Vector3 _defaultVisualScale;
@@ -42,37 +42,29 @@ namespace EyeMoT.Baloon
         private float _defaultCollisionRadius;
         private float _defaultCollisionHight;
         #endregion
-
         private bool _hasDefaultValues;
-        private bool IsNetworkSpawned => Object != null && Object.IsValid;
-        private bool CurrentIsHit => IsNetworkSpawned ? IsHit : _isHit;
-        private float CurrentHitTime => IsNetworkSpawned ? HitTime : _hitTime;
-        private float CurrentLifeTime => IsNetworkSpawned ? NetworkedLifeTime : _lifeTime;
 
         public override void Spawned()
         {
+            _hitSources.Clear();
             InitializeComponents();
             UpdateData();
 
             if (Object.HasStateAuthority)
+            {
+                _lifeTime = SettingManager.Instance.BalloonData.LifeTime;
                 NetworkedLifeTime = _lifeTime;
+            }
             OnColorChanged();
-            VisibleCollision(true);
+            VisibleCollision(false);
         }
 
         public override void Despawned(NetworkRunner runner, bool hasState)
         {
-            if(!EffectEnable) return;
+            if(!_effectEnable) return;
             BalloonSpawnManager.Instance.PlayDestroyEffects(transform.position);
         }
 
-        void Update()
-        {
-            if (IsNetworkSpawned)
-                return;
-
-            TickBalloon(Time.deltaTime, true);
-        }
 
         public override void FixedUpdateNetwork()
         {
@@ -84,27 +76,28 @@ namespace EyeMoT.Baloon
             if (_balloonVisual == null)
                 return;
 
-            if (!CurrentIsHit)
+            
+            if (!IsHit)
             {
                 ApplyShakeOffset(Vector3.zero);
                 return;
             }
 
             // HitTime は Networked なので全端末でだいたい揃う
-            ApplyShakeOffset(GetShakeOffset(CurrentHitTime));
+            ApplyShakeOffset(GetShakeOffset(HitTime));
         }
 
         private void TickBalloon(float deltaTime, bool canExpire)
         {
-            if (!CurrentIsHit)
+            if (!IsHit)
             {
                 ApplyShakeOffset(Vector3.zero);
                 return;
             }
 
-            AddHitTime(deltaTime);
+            HitTime += deltaTime * Mathf.Max(1, _hitSources.Count);
 
-            if (canExpire && CurrentHitTime >= CurrentLifeTime)
+            if (canExpire && HitTime >= NetworkedLifeTime)
             {   
                 _onLifeTimeExpired?.Invoke(this);
                 BalloonSpawnManager.Instance.DestroyBalloon(this);
@@ -115,7 +108,7 @@ namespace EyeMoT.Baloon
         {
             _moveTargetDirection = targetDirection.normalized;
             _moveSpeed = Mathf.Max(0f, moveSpeed);
-            SetMoveState(_moveTargetDirection, _moveSpeed);
+            Rpc_SetMoveState(_moveTargetDirection, _moveSpeed);
 
             if (_networkRigidbody != null)
                 _networkRigidbody.Rigidbody.velocity = _moveTargetDirection * _moveSpeed;
@@ -123,24 +116,29 @@ namespace EyeMoT.Baloon
 
         public void StartBalloonDestroy(float lifeTime)
         {
-            EffectEnable = true;
-            _lifeTime = lifeTime;
-            SetLifeTime(lifeTime);
-            SetHitState(true);
+            SetEffectEnable(true);
+            Rpc_SetLifeTime(lifeTime);
+            Rpc_SetHitState(true);
         }
 
-        public void OnHitLineBeam()
+        public void OnHitLineBeam(PlayerRef source)
         {
-            SetHitState(true);
+            if (!Object || !Object.IsValid)
+                return;
+            Rpc_SetHitSourceState(source, true);
         }
 
-        public void OnMissLineBeam()
+        public void OnMissLineBeam(PlayerRef source)
         {
-            SetHitState(false);
-            ApplyShakeOffset(Vector3.zero);
+            if (!Object || !Object.IsValid)
+                return;
 
-            if (_hitTimeResetOnMiss)
-                SetHitTime(0f);
+            Rpc_SetHitSourceState(source, false);
+        }
+
+        public void SetEffectEnable(bool enable)
+        {
+            _effectEnable = enable;
         }
 
         public void UpdateData()
@@ -151,9 +149,6 @@ namespace EyeMoT.Baloon
             var collision = GetComponent<CapsuleCollider>();
             collision.radius = _defaultCollisionRadius * SettingManager.Instance.BalloonData.CollisionScale;
             collision.height = _defaultCollisionHight * SettingManager.Instance.BalloonData.CollisionScale;
-
-            _lifeTime = SettingManager.Instance.BalloonData.LifeTime;
-            SetLifeTime(_lifeTime);
         }
 
         public void VisibleCollision(bool isVisible) => _collisionVisual.enabled = isVisible;
@@ -182,72 +177,12 @@ namespace EyeMoT.Baloon
             SetDefault();
         }
 
-        private void AddHitTime(float deltaTime)
+        private void ResetMissStateIfNeeded()
         {
-            if (IsNetworkSpawned)
-            {
-                if (Object.HasStateAuthority)
-                    HitTime += deltaTime;
-            }
-            else
-            {
-                _hitTime += deltaTime;
-            }
-        }
+            ApplyShakeOffset(Vector3.zero);
 
-        private void SetHitTime(float hitTime)
-        {
-            _hitTime = hitTime;
-
-            if (!IsNetworkSpawned)
-                return;
-
-            if (Object.HasStateAuthority)
-                HitTime = hitTime;
-            else
-                Rpc_SetHitTime(hitTime);
-        }
-
-        private void SetHitState(bool isHit)
-        {
-            _isHit = isHit;
-
-            if (!IsNetworkSpawned)
-                return;
-
-            if (Object.HasStateAuthority)
-                IsHit = isHit;
-            else
-                Rpc_SetHitState(isHit);
-        }
-
-        private void SetLifeTime(float lifeTime)
-        {
-            _lifeTime = lifeTime;
-
-            if (!IsNetworkSpawned)
-                return;
-
-            if (Object.HasStateAuthority)
-                NetworkedLifeTime = lifeTime;
-            else
-                Rpc_SetLifeTime(lifeTime);
-        }
-
-        private void SetMoveState(Vector3 targetDirection, float moveSpeed)
-        {
-            if (!IsNetworkSpawned)
-                return;
-
-            if (Object.HasStateAuthority)
-            {
-                NetworkedMoveTargetDirection = targetDirection;
-                NetworkedMoveSpeed = moveSpeed;
-            }
-            else
-            {
-                Rpc_SetMoveState(targetDirection, moveSpeed);
-            }
+            if (_hitTimeResetOnMiss)
+                Rpc_SetHitTime(0f);
         }
 
         private void OnColorChanged()
@@ -259,7 +194,41 @@ namespace EyeMoT.Baloon
         [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
         private void Rpc_SetHitState(bool isHit)
         {
+            if (!isHit)
+                _hitSources.Clear();
+
             IsHit = isHit;
+            _effectEnable = isHit;
+
+            if (!isHit)
+            {    
+                ResetMissStateIfNeeded();
+            }
+        }
+
+        [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+        private void Rpc_SetHitSourceState(PlayerRef source, bool isHit, RpcInfo info = default)
+        {
+            if (!source.IsRealPlayer && info.Source.IsRealPlayer)
+                source = info.Source;
+
+            if (!source.IsRealPlayer)
+            {
+                Rpc_SetHitState(isHit);
+                if (!isHit)
+                    ResetMissStateIfNeeded();
+                return;
+            }
+
+            if (isHit)
+                _hitSources.Add(source);
+            else
+                _hitSources.Remove(source);
+
+            Rpc_SetHitState(_hitSources.Count > 0);
+
+            if (_hitSources.Count == 0)
+                ResetMissStateIfNeeded();
         }
 
         [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
@@ -277,9 +246,6 @@ namespace EyeMoT.Baloon
         [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
         private void Rpc_SetMoveState(Vector3 targetDirection, float moveSpeed)
         {
-            NetworkedMoveTargetDirection = targetDirection;
-            NetworkedMoveSpeed = moveSpeed;
-
             if (_networkRigidbody != null)
                 _networkRigidbody.Rigidbody.velocity = targetDirection * moveSpeed;
         }

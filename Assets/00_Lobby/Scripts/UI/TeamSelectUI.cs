@@ -18,8 +18,9 @@ namespace EyeMoT.Fusion
 
         private Dictionary<PlayerRef, PlayerItemUI> _playerItems = new Dictionary<PlayerRef, PlayerItemUI>();
         
-        void RegisterEvents()
+        void Init()
         {
+            Reset();
             PlayerRegistry.OnPlayerRegistered -= OnPlayerRegistered;
             PlayerRegistry.OnPlayerRegistered += OnPlayerRegistered;
             PlayerRegistry.OnPlayerLeft -= OnPlayerLeft;
@@ -28,10 +29,8 @@ namespace EyeMoT.Fusion
 
         void Start()
         {
-            LobbyManager.OnInitAll -= RegisterEvents;
-            LobbyManager.OnInitAll += RegisterEvents;
-            LobbyManager.OnResetAll -= Reset;
-            LobbyManager.OnResetAll += Reset;
+            LobbyManager.OnInitAll -= Init;
+            LobbyManager.OnInitAll += Init;
             foreach (var teamText in _playerCountTexts)
                 teamText.text = "0";
             _spectatorCountText.text = "0";

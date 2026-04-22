@@ -1,47 +1,54 @@
-using Fusion;
 using EyeMoT.Fusion;
+using Fusion;
 using KanKikuchi.AudioManager;
 using UnityEngine;
 
-namespace EyeMoT.Baloon
+namespace EyeMoT.Balloon
 {
     public class LineBeam : NetworkBehaviour
     {
+        public static LineBeam Local { get; private set; }
+
         [Header("Resources")]
         [SerializeField] private LineRenderer _lineRenderer;
-        [SerializeField] private Camera _targetCamera;
         [SerializeField] private GameObject _hitEffect;
         [SerializeField] private GameObject _targetImage;
+        [SerializeField] private Renderer _visualRenderer;
+        [SerializeField] private GameObject _readyStateVisual;
+        private Camera _targetCamera;
 
         [Header("Settings")]
         [SerializeField] private string _targetTag = "Balloon";
         [SerializeField] private string _volumeTag = "BalloonVolume";
-        [SerializeField] private float _hitEffectOffset = 0.13f;
         [SerializeField] private float _targetImageRatio = 0.15f;
+        [SerializeField] private float _targetImageScaleOnMiss = 0.15f;
+        [SerializeField] private float _hitNotifyInterval = 0.1f;
+        [SerializeField] private float _hitEffectOffset = 0.53f;
+        [SerializeField] private float _noLocalAlpha = 0.4f;
 
         private Vector3 _startPoint;
         private Vector3 _endPoint;
+        private Vector3 _targetPosition;
 
         private Balloon _currentBalloon;
         private bool _hasHitTarget;
         private bool _isBeamSoundPlaying;
+        private bool _componentsInitialized;
+        private double _nextHitNotifyTime;
+        [Networked, OnChangedRender(nameof(OnNetworkedReadyChanged))] 
+        public bool NetworkedReady { get; set; } = false;
 
         [Networked, OnChangedRender(nameof(OnNetworkedHasHitTargetChanged))]
         private bool NetworkedHasHitTarget { get; set; }
-        [Networked] private bool NetworkedHasLookTarget { get; set; }
-        [Networked] private Vector3 NetworkedLookTarget { get; set; }
         [Networked] private Vector3 NetworkedStartPoint { get; set; }
         [Networked] private Vector3 NetworkedEndPoint { get; set; }
-        [Networked] private Vector3 NetworkedHitEffectPosition { get; set; }
-        [Networked] private Vector3 NetworkedTargetImagePosition { get; set; }
-        [Networked] private Vector3 NetworkedTargetImageScale { get; set; }
-
-        private bool IsNetworkSpawned => Object != null && Object.IsValid;
+        [Networked] private Vector3 NetworkedTargetPosition { get; set; }
 
 
         public override void Spawned()
         {
-            if (!Object.HasInputAuthority && !Object.HasStateAuthority) return;
+            if(Object.HasInputAuthority)
+                Local = this;
             InitializeComponents();
             ApplyNetworkedVisuals();
         }
@@ -53,95 +60,109 @@ namespace EyeMoT.Baloon
 
         public override void FixedUpdateNetwork()
         {
-            if (!Object.HasStateAuthority) return;
+            if (!Object.HasInputAuthority)
+                return;
 
-            if (GetInput(out EyeMoTNetworkInput input) && input.HasMouse)
-                UpdateLineBeam(true, input.MouseUV);
+            if (GetInput(out BalloonNetworkInput input) && input.HasMouse)
+                UpdateLineBeam(input.MouseUV, input.ScreenAspect);
             else
-                ClearLineBeam(true);
+                ClearLineBeam(false);
+
+            Rpc_SetNetworkedVisuals(
+                _hasHitTarget,
+                _startPoint,
+                _endPoint,
+                _targetPosition);
         }
 
         public override void Render()
         {
-            if (IsNetworkSpawned)
-                ApplyNetworkedVisuals();
+            ApplyNetworkedVisuals();
         }
 
         private void InitializeComponents()
         {
-            if (_targetCamera == null)
-                _targetCamera = Camera.main;
-
-            if (_lineRenderer == null)
-                _lineRenderer = GetComponent<LineRenderer>();
-
-            if (_lineRenderer != null)
-            {
-                _lineRenderer.positionCount = 2;
-                _lineRenderer.enabled = false;
-            }
-
-            if (_hitEffect != null)
-                _hitEffect.SetActive(false);
-
-            if (_targetImage != null)
-                _targetImage.SetActive(false);
-        }
-
-        private void UpdateLineBeam(bool canNotifyBalloon, Vector2 mouseUV)
-        {
-            if (_lineRenderer == null || _targetCamera == null)
+            if (_componentsInitialized)
                 return;
 
-            Ray ray = _targetCamera.ViewportPointToRay(new Vector3(mouseUV.x, mouseUV.y, 0f));
-            bool hasRaycastHit = Physics.Raycast(ray, out RaycastHit hit);
+            _targetCamera = Camera.main;
+            _readyStateVisual.SetActive(false);
 
-            bool hasHitTarget = hasRaycastHit && hit.collider.CompareTag(_targetTag);
-            bool hasHitVolume = hasRaycastHit && hit.collider.CompareTag(_volumeTag);
+            if (EnsureLineRendererPositionCount())
+                _lineRenderer.enabled = false;
 
-            if (hasHitVolume) LookAtTarget(hit.point);
+            _targetImage.transform.localScale = Vector3.one * SettingManager.Instance.BalloonData.VisualScale * _targetImageScaleOnMiss;
+            var teamColor = GameManager.TeamColor[PlayerRegistry.GetPlayer(Object.InputAuthority)?.IndexByTeam ?? 0];
+            _targetImage.GetComponent<SpriteRenderer>().color = Object.HasInputAuthority ? teamColor : new Color(teamColor.r, teamColor.g, teamColor.b, _noLocalAlpha);
+            _visualRenderer.material.color = teamColor;
 
-            if (_hasHitTarget != hasHitTarget)
-            {
-                _hasHitTarget = hasHitTarget;
-                OnHitTargetChanged(_hasHitTarget);
+            if(LobbyManager.Instance.Runner.GameMode == GameMode.Single)
+            {    
+                _targetImage.GetComponent<SpriteRenderer>().color = Object.HasInputAuthority ? Color.yellow : new Color(1f, 1f, 0, _noLocalAlpha);
+                _visualRenderer.material.color = Color.black;
             }
 
-            SetLineVisible(hasHitTarget);
+            _componentsInitialized = true;
+        }
 
-            Balloon hitBalloon = hasHitTarget ? hit.collider.GetComponent<Balloon>() : null;
+        private bool EnsureLineRendererPositionCount()
+        {
+            if (_lineRenderer.positionCount < 2)
+                _lineRenderer.positionCount = 2;
+
+            return true;
+        }
+
+        private Ray GetClientViewportRay(Vector2 mouseUV, float screenAspect)
+        {
+            if (screenAspect <= 0f)
+                return _targetCamera.ViewportPointToRay(new Vector3(mouseUV.x, mouseUV.y, 0f));
+
+            float originalAspect = _targetCamera.aspect;
+            try
+            {
+                _targetCamera.aspect = screenAspect;
+                return _targetCamera.ViewportPointToRay(new Vector3(mouseUV.x, mouseUV.y, 0f));
+            }
+            finally
+            {
+                _targetCamera.aspect = originalAspect;
+            }
+        }
+
+        private void UpdateLineBeam(Vector2 mouseUV, float screenAspect)
+        {
+            if (_targetCamera == null)
+                return;
+
+            Ray ray = GetClientViewportRay(mouseUV, screenAspect);
+            bool hasRaycastHit = Physics.Raycast(ray, out RaycastHit hit);
+
+            _hasHitTarget = hasRaycastHit && hit.collider.CompareTag(_targetTag);
+            bool hasHitVolume = hasRaycastHit && hit.collider.CompareTag(_volumeTag);
+
+            if(hasHitVolume)
+                _targetPosition = hit.point;
+
+            Balloon hitBalloon = _hasHitTarget ? hit.collider.GetComponent<Balloon>() : null;
 
             if (_currentBalloon != hitBalloon)
             {
                 if (_currentBalloon != null)
-                    OnMissTarget(canNotifyBalloon);
+                    OnMissTarget(true);
 
                 _currentBalloon = hitBalloon;
 
                 if (_currentBalloon != null)
-                    OnHitTarget(canNotifyBalloon);
+                    OnHitTarget(true);
             }
 
-            if (!hasHitTarget)
-                return;
-
-            LookAtTarget(_currentBalloon.transform.position);
-
-            if (_hitEffect != null)
-                _hitEffect.transform.position = GetEffectOffset();
-
-            if (_targetImage != null)
-                _targetImage.transform.position = _currentBalloon.transform.position;
-
-            _endPoint = _currentBalloon.transform.position;
-            _startPoint = transform.position;
-            SetLinePositions(_startPoint, _endPoint);
-
-            if (IsNetworkSpawned)
+            if(_hasHitTarget)
             {
-                NetworkedHitEffectPosition = _hitEffect != null ? _hitEffect.transform.position : _endPoint;
-                NetworkedTargetImagePosition = _targetImage != null ? _targetImage.transform.position : _endPoint;
-                NetworkedTargetImageScale = _targetImage != null ? _targetImage.transform.localScale : Vector3.one;
+                _targetPosition = _currentBalloon.transform.position;
+                _startPoint = transform.position;
+                _endPoint = _currentBalloon.transform.position;
+                NotifyCurrentBalloonHit(true);
             }
         }
 
@@ -156,65 +177,70 @@ namespace EyeMoT.Baloon
             if (_hasHitTarget)
             {
                 _hasHitTarget = false;
-                OnHitTargetChanged(false);
-            }
-
-            SetLineVisible(false);
-        }
-
-        private void LookAtTarget(Vector3 position)
-        {
-            Vector3 lookDirection = position - transform.position;
-
-            if (lookDirection.sqrMagnitude > 0f)
-                transform.rotation = Quaternion.LookRotation(lookDirection);
-
-            if (!IsNetworkSpawned)
-                return;
-
-            NetworkedHasLookTarget = true;
-            NetworkedLookTarget = position;
-        }
-
-        private void OnHitTargetChanged(bool hasHitTarget)
-        {
-            if (IsNetworkSpawned)
-                NetworkedHasHitTarget = hasHitTarget;
-
-            if(hasHitTarget)
-            {
-                PlayBeamSound();
-            }
-            else
-            {
-                SetHitVisualsActive(false);
-                StopBeamSound();
             }
         }
 
         private void OnHitTarget(bool canNotifyBalloon)
         {
-            SetHitVisualsActive(true);
-
-            if (_targetImage != null)
-                _targetImage.transform.localScale = _currentBalloon.transform.localScale * _targetImageRatio;
-
-            if (canNotifyBalloon)
-                _currentBalloon.OnHitLineBeam();
-            _endPoint = _currentBalloon.transform.position;
+            _nextHitNotifyTime = 0f;
+            NotifyCurrentBalloonHit(canNotifyBalloon);
+            _targetPosition = _currentBalloon.transform.position;
         }
 
         private void OnMissTarget(bool canNotifyBalloon)
         {
             if (canNotifyBalloon)
-                _currentBalloon.OnMissLineBeam();
-
-            SetHitVisualsActive(false);
+                _currentBalloon.OnMissLineBeam(Object.InputAuthority);
         }
 
-        private Vector3 GetEffectOffset()
+        //一回だけHitEventを発火してもホストに届かないこともあるため、一定時間ごとにHitEventを発火する
+        private void NotifyCurrentBalloonHit(bool canNotifyBalloon)
         {
-            Vector3 effectPosition = _currentBalloon.transform.position;
+            if (!canNotifyBalloon || _currentBalloon == null)
+                return;
+
+            if (Runner != null && Runner.SimulationTime < _nextHitNotifyTime)
+                return;
+
+            _currentBalloon.OnHitLineBeam(Object.InputAuthority);
+
+            if (Runner != null)
+                _nextHitNotifyTime = Runner.SimulationTime + Mathf.Max(0.02f, _hitNotifyInterval);
+        }
+
+
+        private void ApplyNetworkedVisuals()
+        {
+            ApplyNetworkedVisuals(
+                NetworkedHasHitTarget,
+                NetworkedStartPoint,
+                NetworkedEndPoint,
+                NetworkedTargetPosition);
+        }
+
+        private void ApplyNetworkedVisuals(
+            bool hasHitTarget,
+            Vector3 startPoint,
+            Vector3 endPoint,
+            Vector3 targetPosition)
+        {
+            ApplyLookRotation(targetPosition);
+
+            if (EnsureLineRendererPositionCount())
+            {
+                _lineRenderer.SetPosition(0, startPoint);
+                _lineRenderer.SetPosition(1, endPoint);
+            }
+
+            _targetImage.transform.position = targetPosition;
+
+            if(hasHitTarget)
+                _hitEffect.transform.position = GetEffectOffset(targetPosition);
+        }
+
+        private Vector3 GetEffectOffset(Vector3 balloonPosition)
+        {
+            Vector3 effectPosition = balloonPosition;
             Vector3 toBeamOrigin = transform.position - effectPosition;
 
             if (toBeamOrigin.sqrMagnitude > 0f)
@@ -223,69 +249,47 @@ namespace EyeMoT.Baloon
             return effectPosition;
         }
 
-        private void SetLineVisible(bool isVisible)
+        [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority, Channel = RpcChannel.Unreliable)]
+        private void Rpc_SetNetworkedVisuals(
+            bool hasHitTarget,
+            Vector3 startPoint,
+            Vector3 endPoint,
+            Vector3 targetPosition)
         {
-            if (_lineRenderer != null)
-                _lineRenderer.enabled = isVisible;
-
-            if (IsNetworkSpawned)
-                NetworkedHasHitTarget = isVisible;
-        }
-
-        private void SetLinePositions(Vector3 startPoint, Vector3 endPoint)
-        {
-            if (_lineRenderer != null)
-            {
-                _lineRenderer.SetPosition(0, startPoint);
-                _lineRenderer.SetPosition(1, endPoint);
-            }
-
-            if (!IsNetworkSpawned)
-                return;
-
+            NetworkedHasHitTarget = hasHitTarget;
             NetworkedStartPoint = startPoint;
             NetworkedEndPoint = endPoint;
+            NetworkedTargetPosition = targetPosition;
         }
 
-        private void SetHitVisualsActive(bool isActive)
+        [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+        public void Rpc_SetReadyState(bool isReady)
         {
-            if (_hitEffect != null)
-                _hitEffect.SetActive(isActive);
-
-            if (_targetImage != null)
-                _targetImage.SetActive(isActive);
-        }
-
-        private void ApplyNetworkedVisuals()
-        {
-            if (NetworkedHasLookTarget)
-                ApplyLookRotation(NetworkedLookTarget);
-
-            if (_lineRenderer != null)
-            {
-                _lineRenderer.enabled = NetworkedHasHitTarget;
-                _lineRenderer.SetPosition(0, NetworkedStartPoint);
-                _lineRenderer.SetPosition(1, NetworkedEndPoint);
-            }
-
-            SetHitVisualsActive(NetworkedHasHitTarget);
-
-            if (_hitEffect != null)
-                _hitEffect.transform.position = NetworkedHitEffectPosition;
-
-            if (_targetImage != null)
-            {
-                _targetImage.transform.position = NetworkedTargetImagePosition;
-                _targetImage.transform.localScale = NetworkedTargetImageScale;
-            }
+            NetworkedReady = isReady;
         }
 
         private void OnNetworkedHasHitTargetChanged()
         {
+            _lineRenderer.enabled = NetworkedHasHitTarget;
+            _hitEffect.SetActive(NetworkedHasHitTarget);
+
+            if(!Object.HasInputAuthority) return;
+
             if (NetworkedHasHitTarget)
+            {    
+                _targetImage.transform.localScale = Vector3.one * SettingManager.Instance.BalloonData.VisualScale * _targetImageRatio;
                 PlayBeamSound();
+            }
             else
+            {    
+                _targetImage.transform.localScale = Vector3.one * SettingManager.Instance.BalloonData.VisualScale * _targetImageScaleOnMiss;
                 StopBeamSound();
+            }
+        }
+
+        private void OnNetworkedReadyChanged()
+        {
+            _readyStateVisual.SetActive(NetworkedReady);
         }
 
         private void ApplyLookRotation(Vector3 position)

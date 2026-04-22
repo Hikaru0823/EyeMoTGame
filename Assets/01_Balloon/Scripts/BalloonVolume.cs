@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using EyeMoT.Fusion;
 using UnityEngine;
 
-namespace EyeMoT.Baloon
+namespace EyeMoT.Balloon
 {
     public class BalloonVolume : MonoBehaviour
     {

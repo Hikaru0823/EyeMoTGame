@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 986342013318165047}
   - component: {fileID: 196413138473561480}
   - component: {fileID: 9175254903356036783}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Stars
   m_TagString: FxTemporaire
   m_Icon: {fileID: 0}
@@ -4732,7 +4732,7 @@ GameObject:
   - component: {fileID: 9157105887693468085}
   - component: {fileID: 9157105887693424661}
   - component: {fileID: 114473157489228906}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Balloon_SmokePop
   m_TagString: FxTemporaire
   m_Icon: {fileID: 0}
@@ -9502,7 +9502,7 @@ GameObject:
   - component: {fileID: 9157105887711818999}
   - component: {fileID: 9157105887693468087}
   - component: {fileID: 9157105887693424663}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Lines
   m_TagString: FxTemporaire
   m_Icon: {fileID: 0}

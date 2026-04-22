@@ -19,7 +19,7 @@ namespace EyeMoT.Fusion
             TeamB = 1,
             Spectator = 255
         }
-        public const byte CAPACITY = 10;
+        public const byte CAPACITY = 20;
         public static PlayerRegistry Instance { get; private set; }
         public static int CountAll => Instance.Object.IsValid ? Instance.ObjectByRef.Count : 0;
         public static int CountPlayers => Instance.Object.IsValid ? CountWhere(p => p.Team != TeamState.Spectator) : 0;
@@ -57,6 +57,8 @@ namespace EyeMoT.Fusion
 
             if(!_allReady)
             {
+                if(CountAll != Runner.ActivePlayers.Count()) return;
+
                 var allReady = Players.Count() > 0 && Players.All(p => p.IsReady);
                 if (allReady)
                 {
@@ -71,40 +73,6 @@ namespace EyeMoT.Fusion
             Instance = null;
             runner.RemoveCallbacks(this);
             OnPlayerRegistered = OnPlayerLeft = null;
-        }
-
-        bool GetAvailable(out byte index)
-        {
-            if (ObjectByRef.Count == 0)
-            {
-                index = 0;
-                return true;
-            }
-            else if (ObjectByRef.Count == CAPACITY)
-            {
-                index = default;
-                return false;
-            }
-
-            byte[] indices = ObjectByRef.OrderBy(kvp => kvp.Value.Index).Select(kvp => kvp.Value.Index).ToArray();
-
-            for (int i = 0; i < indices.Length - 1; i++)
-            {
-                if (indices[i + 1] > indices[i] + 1)
-                {
-                    index = (byte)(indices[i] + 1);
-                    return true;
-                }
-            }
-
-            if(indices.Length == 1 && indices[0] > 0)
-            {
-                index = 0;
-                return true;
-            }
-
-            index = (byte)(indices[indices.Length - 1] + 1);
-            return true;
         }
         
         public bool GetAvailableOfTeam(PlayerRegistry.TeamState team, out byte index)
@@ -151,7 +119,6 @@ namespace EyeMoT.Fusion
             {
                 Instance.ObjectByRef.Add(pRef, pObj);
                 pObj.Server_Init(pRef, index);
-                //PlayerJoined(pRef);
             }
             else
             {
@@ -372,14 +339,13 @@ namespace EyeMoT.Fusion
 
         #endregion
 
+        #region INetworkRunnerCallbacks
+        void INetworkRunnerCallbacks.OnPlayerJoined(NetworkRunner runner, PlayerRef player) { }
         void INetworkRunnerCallbacks.OnPlayerLeft(NetworkRunner runner, PlayerRef player)
         {
             if (runner.IsServer) Server_Remove(runner, player);
             OnPlayerLeft?.Invoke(Runner, player);
         }
-
-        #region INetworkRunnerCallbacks
-        void INetworkRunnerCallbacks.OnPlayerJoined(NetworkRunner runner, PlayerRef player) { }
         void INetworkRunnerCallbacks.OnInput(NetworkRunner runner, NetworkInput input) { }
         void INetworkRunnerCallbacks.OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) { }
         void INetworkRunnerCallbacks.OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason) { }

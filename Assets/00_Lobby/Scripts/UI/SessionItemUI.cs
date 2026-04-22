@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using KanKikuchi.AudioManager;
-using UnityEngine.SceneManagement;
 
 namespace EyeMoT.Fusion
 {
@@ -13,7 +12,7 @@ namespace EyeMoT.Fusion
         [Header("Resources")]
         [SerializeField] private Image _sessionIcon;
         [SerializeField] private TMP_Text _playerCount;
-        [SerializeField] private Image _statusIcon;
+        [SerializeField] private GameObject _statusIcon;
         [SerializeField] private Button[] _joinButtons;
         [HideInInspector] public string SessionName;
         [HideInInspector] public SessionDef.Name SessionDefName;
@@ -23,13 +22,13 @@ namespace EyeMoT.Fusion
             foreach (var joinButton in _joinButtons)
                 joinButton.interactable = isOpen;
 
-            SessionDef.Name sessionDefName = (SessionDef.Name)System.Enum.Parse(typeof(SessionDef.Name), sessionName.Replace(SceneManager.GetActiveScene().name + "_", ""));
+            SessionDef.Name sessionDefName = SessionCodeUtility.ParseSessionName(sessionName);
             SessionDefName = sessionDefName;
             LobbyManager.Instance.SessionHolder.TryGet(sessionDefName, out SessionData data);
             _sessionIcon.sprite = data.Sprite;
             SessionName = sessionName;
             _playerCount.text = $"{Players}";
-            _statusIcon.enabled = !isOpen;
+            _statusIcon.SetActive(!isOpen);
         }
 
         public void Join()

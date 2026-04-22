@@ -6,7 +6,7 @@ namespace EyeMoT.Heatmap
     public class HeatmapCsvWriter
     {
         /// <summary>
-        /// data format: List of [time, uv.x, uv.y, sourceId]
+        /// data format: List of [time, uv.x, uv.y]
         /// </summary>
         /// <param name="path"></param>
         /// <param name="uvList"></param>

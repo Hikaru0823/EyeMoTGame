@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace EyeMoT.Baloon
+namespace EyeMoT.Balloon
 {
     public class SettingManager : SceneSingleton<SettingManager>
     {

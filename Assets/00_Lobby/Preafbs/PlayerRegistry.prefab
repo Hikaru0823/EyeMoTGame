@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6639738198096775075}
   - component: {fileID: 8445478192854651758}
+  - component: {fileID: 9133360850653388084}
   - component: {fileID: 1530208807081796182}
   m_Layer: 0
   m_Name: PlayerRegistry
@@ -45,6 +46,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06e755fddc1afff4d8e7131a0daa5019, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &9133360850653388084
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2617254266008109419}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36bd80bc3ef652841870654312e494de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _TickStarted: 0
 --- !u!114 &1530208807081796182
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -63,4 +77,5 @@ MonoBehaviour:
   NestedObjects: []
   NetworkedBehaviours:
   - {fileID: 8445478192854651758}
+  - {fileID: 9133360850653388084}
   ForceRemoteRenderTimeframe: 0

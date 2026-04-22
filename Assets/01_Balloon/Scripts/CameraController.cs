@@ -1,12 +1,9 @@
-using Fusion;
+using System;
 using UnityEngine;
-using EyeMoT.Fusion;
-using EyeMoT.Heatmap;
-using static PreviewManager;
 
-namespace EyeMoT.Baloon
+namespace EyeMoT.Balloon
 {
-    public class CameraController : NetworkBehaviour
+    public class CameraController : MonoBehaviour
     {
         [Header("Settings")]
         [SerializeField] private float _sensitivity = 3f;
@@ -17,45 +14,24 @@ namespace EyeMoT.Baloon
         private Vector3 _initRotate;
         private Vector2 _currentRotate;
 
-        [Networked] private Vector3 NetworkedInitRotate { get; set; }
-        [Networked] private Vector2 NetworkedCurrentRotate { get; set; }
-
-        private bool IsNetworkSpawned => Object != null && Object.IsValid;
-
-        public override void Spawned()
+        private void Awake()
         {
-            if(!gameObject.activeSelf) return;
-            if(!Object.HasInputAuthority && !Object.HasStateAuthority) return;
-
-            Debug.Log("Camera Spawned");
             _thisCamera = GetComponent<Camera>();
+            Camera.SetupCurrent(_thisCamera);
             InitializeRotation();
-
-            if (Object.HasStateAuthority)
-            {
-                NetworkedInitRotate = _initRotate;
-                NetworkedCurrentRotate = _currentRotate;
-            }
-
-            ApplyRotation(CurrentRotate);
+            ApplyRotation(_currentRotate);
         }
 
-        public override void FixedUpdateNetwork()
+        void Start()
         {
-            if (!Object.HasStateAuthority && !Object.HasInputAuthority) return;
-            
-            if (GetInput(out EyeMoTNetworkInput input) && input.HasMouse)
-            {
-                UpdateRotation(Runner.DeltaTime, Object.HasStateAuthority, input.MouseUV);
-            }
-            else
-            {
-                ApplyRotation(CurrentRotate);
-            }
+            UpdateBackGround();
         }
 
-        private Vector3 CurrentInitRotate => IsNetworkSpawned && Object.HasStateAuthority ? NetworkedInitRotate : _initRotate;
-        private Vector2 CurrentRotate => IsNetworkSpawned && Object.HasStateAuthority ? NetworkedCurrentRotate : _currentRotate;
+        private void Update()
+        {
+            GetNormalizedMousePosition(out Vector2 mouseUV);
+            UpdateRotation(Time.deltaTime, mouseUV);
+        }
 
         private void InitializeRotation()
         {
@@ -63,23 +39,10 @@ namespace EyeMoT.Baloon
             _currentRotate = _initRotate;
         }
 
-        private void UpdateRotation(float deltaTime, bool hasStateAuthority, Vector2 normalizedMousePosition)
+        private void UpdateRotation(float deltaTime, Vector2 normalizedMousePosition)
         {
-            Vector2 nextRotate = CalculateRotation(CurrentInitRotate, CurrentRotate, deltaTime, normalizedMousePosition);
-
-            if (hasStateAuthority)
-            {
-                if (IsNetworkSpawned)
-                    NetworkedCurrentRotate = nextRotate;
-                else
-                    _currentRotate = nextRotate;
-            }
-            else
-            {
-                _currentRotate = nextRotate;
-            }
-
-            ApplyRotation(nextRotate);
+            _currentRotate = CalculateRotation(_initRotate, _currentRotate, deltaTime, normalizedMousePosition);
+            ApplyRotation(_currentRotate);
         }
 
         private Vector2 CalculateRotation(Vector3 initRotate, Vector2 currentRotate, float deltaTime, Vector2 normalizedMousePosition)
@@ -94,6 +57,17 @@ namespace EyeMoT.Baloon
             return currentRotate;
         }
 
+        private void GetNormalizedMousePosition(out Vector2 normalizedMousePosition)
+        {
+            int width = Mathf.Max(1, Screen.width);
+            int height = Mathf.Max(1, Screen.height);
+            Vector3 mouse = Input.mousePosition;
+
+            normalizedMousePosition = new Vector2(
+                Mathf.Clamp01(mouse.x / width),
+                Mathf.Clamp01(mouse.y / height));
+        }
+
         private void ApplyRotation(Vector2 rotate)
         {
             transform.rotation = Quaternion.Euler(rotate.x, rotate.y, 0f);
@@ -105,16 +79,16 @@ namespace EyeMoT.Baloon
 
             switch(SettingManager.Instance.GameData.BGColor)
             {
-                case BGColor.Default:
+                case PreviewManager.BGColor.Default:
                     _thisCamera.clearFlags = CameraClearFlags.Skybox;
                     _thisCamera.cullingMask |= (1 << stageLayer);
                     break;
-                case BGColor.White:
+                case PreviewManager.BGColor.White:
                     _thisCamera.clearFlags = CameraClearFlags.SolidColor;
                     _thisCamera.backgroundColor = Color.white;
                     _thisCamera.cullingMask &= ~(1 << stageLayer);
                     break;
-                case BGColor.Black:
+                case PreviewManager.BGColor.Black:
                     _thisCamera.clearFlags = CameraClearFlags.SolidColor;
                     _thisCamera.backgroundColor = Color.black;
                     _thisCamera.cullingMask &= ~(1 << stageLayer);
