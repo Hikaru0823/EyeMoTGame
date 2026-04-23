@@ -6,17 +6,16 @@ namespace EyeMoT.Balloon
     public class CameraController : MonoBehaviour
     {
         [Header("Settings")]
+        [SerializeField] private Camera _thisCamera;
         [SerializeField] private float _sensitivity = 3f;
         [SerializeField] private Vector2 _xRotateLimit = new Vector2(-10f, 10f);
         [SerializeField] private Vector2 _yRotateLimit = new Vector2(-10f, 10f);
 
-        private Camera _thisCamera;
         private Vector3 _initRotate;
         private Vector2 _currentRotate;
 
         private void Awake()
         {
-            _thisCamera = GetComponent<Camera>();
             Camera.SetupCurrent(_thisCamera);
             InitializeRotation();
             ApplyRotation(_currentRotate);
