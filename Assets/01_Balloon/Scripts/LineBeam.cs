@@ -68,6 +68,8 @@ namespace EyeMoT.Balloon
             else
                 ClearLineBeam(false);
 
+            //_targetImage.transform.position = _targetPosition;
+
             Rpc_SetNetworkedVisuals(
                 _hasHitTarget,
                 _startPoint,
@@ -164,8 +166,6 @@ namespace EyeMoT.Balloon
                 _endPoint = _currentBalloon.transform.position;
                 NotifyCurrentBalloonHit(true);
             }
-
-            _targetImage.transform.position = _targetPosition;
         }
 
         private void ClearLineBeam(bool canNotifyBalloon)
@@ -235,7 +235,9 @@ namespace EyeMoT.Balloon
             }
 
             //ローカルで処理する
-            if(!Object.HasInputAuthority)
+            if (Object.HasInputAuthority)
+                _targetImage.transform.position = _targetPosition;
+            else
                 _targetImage.transform.position = targetPosition;
 
             if(hasHitTarget)
