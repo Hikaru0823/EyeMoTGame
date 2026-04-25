@@ -164,6 +164,8 @@ namespace EyeMoT.Balloon
                 _endPoint = _currentBalloon.transform.position;
                 NotifyCurrentBalloonHit(true);
             }
+
+            _targetImage.transform.position = _targetPosition;
         }
 
         private void ClearLineBeam(bool canNotifyBalloon)
@@ -232,7 +234,9 @@ namespace EyeMoT.Balloon
                 _lineRenderer.SetPosition(1, endPoint);
             }
 
-            _targetImage.transform.position = targetPosition;
+            //ローカルで処理する
+            if(!Object.HasInputAuthority)
+                _targetImage.transform.position = targetPosition;
 
             if(hasHitTarget)
                 _hitEffect.transform.position = GetEffectOffset(targetPosition);
