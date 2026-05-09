@@ -18,6 +18,7 @@ namespace EyeMoT.Fusion
         [SerializeField] private InputProvider _inputProvider;
         [SerializeField] private TMP_Text _lobbyStateText;
         [SerializeField] public SessionHolder SessionHolder;
+        [SerializeField] private GameObject[] _modeStatuses; // 0 : Collabo, 1 : Mustch;
         public TabManager _networkTabManager;
         public TabManager _mainTabManager;
         public static event System.Action OnInitAll; //Host or Client　がセッションに入ったときに呼ばれるイベント
@@ -70,11 +71,17 @@ namespace EyeMoT.Fusion
             yield return _runnerLifecycleManager.ShutdownRunnerRoutine();
             NetworkRunner runner = _runnerLifecycleManager.CreateRunner(this, attachSpawnListener: true);
 
+            Dictionary<string, SessionProperty> customProperties = new Dictionary<string, SessionProperty>
+            {
+                { "Mode", 1 },
+            };
+
             Task<StartGameResult> task = runner.StartGame(new StartGameArgs()
             {
                 GameMode = GameMode.Single,
                 SessionName = "1",
                 SceneManager = runner.GetComponent<INetworkSceneManager>(),
+                SessionProperties = customProperties,
             });
 
             while (!task.IsCompleted)
@@ -133,6 +140,8 @@ namespace EyeMoT.Fusion
                 _lobbyStateText.text = "ルーム一覧";
                     Debug.Log("<color=orange>[Fusion]</color> Joined Lobby!");
                 successCallback?.Invoke();
+                foreach(var obj in _modeStatuses)
+                    obj.SetActive(false);
             }
 
             _isTransitioning = false;
@@ -150,18 +159,15 @@ namespace EyeMoT.Fusion
             SessionHolder.TryGet(availableSession.Value, out SessionData data);
             var sessionCode = SessionCodeUtility.BuildSessionCode(data.Name);
             var description = $"ホストとしてルーム<color=green>「{data.UIName}」</color>を作成します。\nホストがゲーム終了するとルームも閉じます。";
-            PopupUI.OnVisible($"ルームを作成しますか？", description, data.Sprite, () =>
-            {
-                TryHostSession(sessionCode);
-            });
+            SessionPopupUI.OnVisible($"ルームを作成しますか？", description, data.Sprite, sessionCode);
         }
 
-        public void TryHostSession(string sessionCode = null, Action successCallback = null)
+        public void TryHostSession(string sessionCode = null, SessionDef.Mode mode = SessionDef.Mode.COLLABOLATION, Action successCallback = null)
         {
-            StartCoroutine(HostSessionRoutine(sessionCode, successCallback));
+            StartCoroutine(HostSessionRoutine(sessionCode, mode, successCallback));
         }
 
-        IEnumerator HostSessionRoutine(string sessionCode = null, Action successCallback = null)
+        IEnumerator HostSessionRoutine(string sessionCode = null, SessionDef.Mode mode = SessionDef.Mode.COLLABOLATION,  Action successCallback = null)
         {
             if (_isTransitioning)
             {
@@ -175,9 +181,7 @@ namespace EyeMoT.Fusion
 
             Dictionary<string, SessionProperty> customProperties = new Dictionary<string, SessionProperty>
             {
-                { "WhitePlayers", 0 },
-                { "RedPlayers", 0 },
-                { "SpectatorPlayers", 0 },
+                { "Mode", (int)mode },
             };
 
             Loading.Instance.SetVisible(true);
@@ -201,6 +205,10 @@ namespace EyeMoT.Fusion
             {
                 Debug.Log("<color=orange>[Fusion]</color> Session Hosted!");
                 OnInitAll?.Invoke();
+                int modeIdx = 0;
+                if (LobbyManager.Instance.Runner.SessionInfo.Properties.TryGetValue("Mode", out SessionProperty modeProperty) && modeProperty.IsInt)
+                    modeIdx = modeProperty;
+                _modeStatuses[modeIdx].SetActive(true);
                 SessionDef.Name sessionDefName = SessionCodeUtility.ParseSessionName(sessionCode);
                 SessionHolder.TryGet(sessionDefName, out SessionData data);
                 _lobbyStateText.text = $"ルーム : <color=green>{data.UIName}</color>";
@@ -252,6 +260,10 @@ namespace EyeMoT.Fusion
             {
                 Debug.Log("<color=orange>[Fusion]</color> Joined Session!");
                 OnInitAll?.Invoke();
+                int modeIdx = 0;
+                if (LobbyManager.Instance.Runner.SessionInfo.Properties.TryGetValue("Mode", out SessionProperty modeProperty) && modeProperty.IsInt)
+                    modeIdx = modeProperty;
+                _modeStatuses[modeIdx].SetActive(true);
                 SessionDef.Name sessionDefName = SessionCodeUtility.ParseSessionName(sessionCode);
                 SessionHolder.TryGet(sessionDefName, out SessionData data);
                 _lobbyStateText.text = $"ルーム : <color=green>{data.UIName}</color>";

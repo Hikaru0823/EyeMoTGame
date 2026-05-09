@@ -43,6 +43,7 @@ namespace EyeMoT.Balloon
         [Networked] private Vector3 NetworkedStartPoint { get; set; }
         [Networked] private Vector3 NetworkedEndPoint { get; set; }
         [Networked] private Vector3 NetworkedTargetPosition { get; set; }
+        [Networked,  OnChangedRender(nameof(UpdateBalloonCount))] public int NetwrokedBalloonCount  { get; set; }
 
 
         public override void Spawned()
@@ -322,6 +323,21 @@ namespace EyeMoT.Balloon
 
             _isBeamSoundPlaying = false;
             SEManager.Instance.Stop(SEPath.BEAM);
+        }
+
+        private void UpdateBalloonCount()
+        {
+            if(NetwrokedBalloonCount <= 0) return;
+            int modeIdx = 0;
+            if (LobbyManager.Instance.Runner.SessionInfo.Properties.TryGetValue("Mode", out SessionProperty modeProperty) && modeProperty.IsInt)
+                modeIdx = modeProperty;
+            if((SessionDef.Mode)modeIdx == SessionDef.Mode.COLLABOLATION)
+                GameManager.Instance.UpdateBalloonCount();
+            else
+            {
+                if(!Object.HasInputAuthority) return;
+                GameManager.Instance.UpdateBalloonCount();
+            }
         }
     }
 }

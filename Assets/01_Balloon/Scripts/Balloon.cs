@@ -44,6 +44,7 @@ namespace EyeMoT.Balloon
         #endregion
         private bool _hasDefaultValues;
 
+        // ネットワーク上に生成されたときの初期化処理。
         public override void Spawned()
         {
             _hitSources.Clear();
@@ -59,6 +60,7 @@ namespace EyeMoT.Balloon
             VisibleCollision(false);
         }
 
+        // ネットワーク上から削除されたときに破壊エフェクトを再生する。
         public override void Despawned(NetworkRunner runner, bool hasState)
         {
             if(!_effectEnable) return;
@@ -66,11 +68,13 @@ namespace EyeMoT.Balloon
         }
 
 
+        // ネットワーク更新ごとにヒット時間と寿命を進める。
         public override void FixedUpdateNetwork()
         {
             TickBalloon(Runner.DeltaTime, Object.HasStateAuthority);
         }
 
+        // 描画更新ごとにヒット中の見た目の揺れを反映する。
         public override void Render()
         {
             if (_balloonVisual == null)
@@ -87,6 +91,7 @@ namespace EyeMoT.Balloon
             ApplyShakeOffset(GetShakeOffset(HitTime));
         }
 
+        // ヒット中の経過時間を加算し、寿命に達したらバルーンを破壊する。
         private void TickBalloon(float deltaTime, bool canExpire)
         {
             if (!IsHit)
@@ -100,10 +105,11 @@ namespace EyeMoT.Balloon
             if (canExpire && HitTime >= NetworkedLifeTime)
             {   
                 _onLifeTimeExpired?.Invoke(this);
-                BalloonSpawnManager.Instance.DestroyBalloon(this);
+                BalloonSpawnManager.Instance.DestroyBalloon(this, _hitSources);
             }
         }
 
+        // 指定方向へバルーンを移動させる。
         public void StartMove(Vector3 targetDirection, float moveSpeed)
         {
             _moveTargetDirection = targetDirection.normalized;
@@ -114,6 +120,7 @@ namespace EyeMoT.Balloon
                 _networkRigidbody.Rigidbody.velocity = _moveTargetDirection * _moveSpeed;
         }
 
+        // 指定した寿命で破壊カウントを開始する。
         public void StartBalloonDestroy(float lifeTime)
         {
             SetEffectEnable(true);
@@ -121,6 +128,7 @@ namespace EyeMoT.Balloon
             Rpc_SetHitState(true);
         }
 
+        // ビームが当たったプレイヤーをヒット元として登録する。
         public void OnHitLineBeam(PlayerRef source)
         {
             if (!Object || !Object.IsValid)
@@ -128,6 +136,7 @@ namespace EyeMoT.Balloon
             Rpc_SetHitSourceState(source, true);
         }
 
+        // ビームが外れたプレイヤーをヒット元から解除する。
         public void OnMissLineBeam(PlayerRef source)
         {
             if (!Object || !Object.IsValid)
@@ -136,11 +145,13 @@ namespace EyeMoT.Balloon
             Rpc_SetHitSourceState(source, false);
         }
 
+        // 削除時の破壊エフェクト再生を切り替える。
         public void SetEffectEnable(bool enable)
         {
             _effectEnable = enable;
         }
 
+        // 設定値に合わせて見た目と当たり判定のサイズを更新する。
         public void UpdateData()
         {
             _balloonVisual.transform.localScale = _defaultVisualScale * SettingManager.Instance.BalloonData.VisualScale;
@@ -151,8 +162,10 @@ namespace EyeMoT.Balloon
             collision.height = _defaultCollisionHight * SettingManager.Instance.BalloonData.CollisionScale;
         }
 
+        // 当たり判定表示の表示/非表示を切り替える。
         public void VisibleCollision(bool isVisible) => _collisionVisual.enabled = isVisible;
 
+        // 初期スケールと当たり判定サイズを保持する。
         private void SetDefault()
         {
             if (_hasDefaultValues)
@@ -166,6 +179,7 @@ namespace EyeMoT.Balloon
             _hasDefaultValues = true;
         }
 
+        // 必要なコンポーネント参照と初期位置を用意する。
         private void InitializeComponents()
         {
             if (_networkRigidbody == null)
@@ -177,6 +191,7 @@ namespace EyeMoT.Balloon
             SetDefault();
         }
 
+        // ミス時に揺れを戻し、設定に応じてヒット時間をリセットする。
         private void ResetMissStateIfNeeded()
         {
             ApplyShakeOffset(Vector3.zero);
@@ -185,6 +200,7 @@ namespace EyeMoT.Balloon
                 Rpc_SetHitTime(0f);
         }
 
+        // ネットワーク同期された色を見た目に反映する。
         private void OnColorChanged()
         {
             if (_balloonVisual != null)
@@ -192,6 +208,7 @@ namespace EyeMoT.Balloon
         }
 
         [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+        // StateAuthority 側でヒット状態を更新する。
         private void Rpc_SetHitState(bool isHit)
         {
             if (!isHit)
@@ -207,6 +224,7 @@ namespace EyeMoT.Balloon
         }
 
         [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+        // StateAuthority 側でプレイヤーごとのヒット状態を更新する。
         private void Rpc_SetHitSourceState(PlayerRef source, bool isHit, RpcInfo info = default)
         {
             if (!source.IsRealPlayer && info.Source.IsRealPlayer)
@@ -232,18 +250,21 @@ namespace EyeMoT.Balloon
         }
 
         [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+        // StateAuthority 側でヒット経過時間を設定する。
         private void Rpc_SetHitTime(float hitTime)
         {
             HitTime = hitTime;
         }
 
         [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+        // StateAuthority 側で破壊までの寿命を設定する。
         private void Rpc_SetLifeTime(float lifeTime)
         {
             NetworkedLifeTime = lifeTime;
         }
 
         [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+        // StateAuthority 側で移動速度を同期して反映する。
         private void Rpc_SetMoveState(Vector3 targetDirection, float moveSpeed)
         {
             if (_networkRigidbody != null)
@@ -251,6 +272,7 @@ namespace EyeMoT.Balloon
         }
 
         #region Shake Effect
+        // バルーンの見た目に揺れ用の位置オフセットを適用する。
         private void ApplyShakeOffset(Vector3 offset)
         {
             if (_balloonVisual == null)
@@ -259,6 +281,7 @@ namespace EyeMoT.Balloon
             _balloonVisual.transform.localPosition = _balloonVisualDefaultLocalPosition + offset;
         }
 
+        // PerlinNoise を使って自然な揺れのオフセットを計算する。
         private Vector3 GetShakeOffset(float t)
         {
             float time = t * _shakeSpeed;

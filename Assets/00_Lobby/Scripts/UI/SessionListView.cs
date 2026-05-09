@@ -41,7 +41,12 @@ namespace EyeMoT.Fusion
             {
                 bool isFull = info.PlayerCount >= info.MaxPlayers;
                 bool canJoin = info.IsOpen && !isFull;
-                GetSessionItem(info.Name).Init(info.Name, info.PlayerCount, canJoin);
+                int modeIdx = 0;
+                if (info.Properties.TryGetValue("Mode", out SessionProperty modeProperty) && modeProperty.IsInt)
+                {
+                    modeIdx = modeProperty;
+                }
+                GetSessionItem(info.Name).Init(info.Name, info.PlayerCount, canJoin, modeIdx);
             }
         }
 

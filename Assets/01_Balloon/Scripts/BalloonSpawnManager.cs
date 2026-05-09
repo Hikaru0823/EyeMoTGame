@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using EyeMoT.Fusion;
+using Fusion;
 using Fusion.Addons.Physics;
 using KanKikuchi.AudioManager;
 using UnityEngine;
@@ -191,9 +192,14 @@ namespace EyeMoT.Balloon
             return result;
         }
 
-        public void DestroyBalloon(Balloon balloon)
+        public void DestroyBalloon(Balloon balloon, HashSet<PlayerRef> sources)
         {
             if (!balloon.Object.HasStateAuthority) return;
+
+            foreach(var playerRef in sources)
+            {
+                PlayerContent.GetPlayer(playerRef).NetwrokedBalloonCount++;
+            }
 
             _activeBalloons.Remove(balloon);
             LobbyManager.Instance.Runner.Despawn(balloon.Object);
@@ -211,7 +217,6 @@ namespace EyeMoT.Balloon
 
             Instantiate(effect.Object, pos, effect.Object.transform.rotation);
             SEManager.Instance.Play(effect.CurrentSEPath);
-            OnBalloonDestroyed?.Invoke();
         }
 
         public void DeleteBalloon(Balloon balloon)

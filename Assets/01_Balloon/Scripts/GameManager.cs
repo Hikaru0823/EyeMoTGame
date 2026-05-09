@@ -52,7 +52,7 @@ namespace EyeMoT.Balloon
             LobbyManager.OnReliableDataReceivedEvent -= OnReliableDataReceived;
             LobbyManager.OnReliableDataReceivedEvent += OnReliableDataReceived;
 
-            BalloonSpawnManager.Instance.OnBalloonDestroyed += UpdateBalloonCount;
+            //BalloonSpawnManager.Instance.OnBalloonDestroyed += UpdateBalloonCount;
 
             LobbyManager.Instance.TrySingleSession(Init);
         }
@@ -148,10 +148,13 @@ namespace EyeMoT.Balloon
             Init();
         }
 
-        private void UpdateBalloonCount()
+        public void UpdateBalloonCount()
         {
             if(!_isStart) return;
-            _balloonCount++;
+            var count = 0;
+            foreach(var player in PlayerContent.Everyone)
+                count += player.NetwrokedBalloonCount;
+            _balloonCount = count;
             _balloonCountText.text = "×" + _balloonCount;
         }
         

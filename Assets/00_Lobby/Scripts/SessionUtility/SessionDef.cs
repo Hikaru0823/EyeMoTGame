@@ -11,5 +11,11 @@ namespace EyeMoT.Fusion
             ICE,
             PIG
         }
+
+        public enum Mode
+        {
+            COLLABOLATION,
+            MUSTCH,
+        }
     }
 }

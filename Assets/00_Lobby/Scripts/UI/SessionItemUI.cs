@@ -14,10 +14,11 @@ namespace EyeMoT.Fusion
         [SerializeField] private TMP_Text _playerCount;
         [SerializeField] private GameObject _statusIcon;
         [SerializeField] private Button[] _joinButtons;
-        [HideInInspector] public string SessionName;
+        [SerializeField] private GameObject[] _modeStatuses; // 0 : Collabo, 1 : Mustch;
+        [HideInInspector] public string SessionName{get; private set;}
         [HideInInspector] public SessionDef.Name SessionDefName;
 
-        public void Init(string sessionName, int Players, bool isOpen)
+        public void Init(string sessionName, int Players, bool isOpen, int modeIdx)
         {
             foreach (var joinButton in _joinButtons)
                 joinButton.interactable = isOpen;
@@ -29,6 +30,10 @@ namespace EyeMoT.Fusion
             SessionName = sessionName;
             _playerCount.text = $"{Players}";
             _statusIcon.SetActive(!isOpen);
+
+            foreach(var statusObj in _modeStatuses)
+                statusObj.SetActive(false);
+            _modeStatuses[modeIdx].SetActive(true);
         }
 
         public void Join()
