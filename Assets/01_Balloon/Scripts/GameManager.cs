@@ -8,7 +8,6 @@ using Fusion;
 using Fusion.Sockets;
 using KanKikuchi.AudioManager;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem.Interactions;
 using UnityEngine.SceneManagement;
@@ -69,6 +68,7 @@ namespace EyeMoT.Balloon
             _mainTabManager.OpenPanel("Game");
             if(PlayerObject.Local.Team != PlayerRegistry.TeamState.Spectator)
                 HeatmapRenderer.Instance.StartHeatmap("01_Balloon", true);
+            EyeMoT.GameRecoder.GameRecoder.Instance.RecordStart();
             BGMManager.Instance.Play(BGMPath.BALLOON_GAME, volumeRate: 0.5f);
 
             var players = PlayerRegistry.Players
@@ -114,6 +114,7 @@ namespace EyeMoT.Balloon
             if(PlayerObject.Local.Team != PlayerRegistry.TeamState.Spectator)
             {
                 var heatmapResult = HeatmapRenderer.Instance.StopHeatmap();
+                EyeMoT.GameRecoder.GameRecoder.Instance.RecordEnd();
                 _heatmapTextures[PlayerObject.Local.IndexByTeam] = heatmapResult.HeatmapTexture;
                 _heatmapTextureReady[PlayerObject.Local.IndexByTeam] = true;
                 SendHeatmapTextureToServer(heatmapResult.HeatmapTexture);
@@ -140,6 +141,7 @@ namespace EyeMoT.Balloon
             if(_resultPanel.GetCurrentAnimatorStateInfo(0).IsName(StaticData.PANEL_FADE_IN))
                 _resultPanel.Play(StaticData.PANEL_FADE_OUT);
             var heatmapResult = HeatmapRenderer.Instance.StopHeatmap(false);
+            EyeMoT.GameRecoder.GameRecoder.Instance.RecordEnd();
             HeatmapRenderer.Instance.VisibleHeatmap(false);
             BGMManager.Instance.Play(BGMPath.BALLOON_TITLE, volumeRate: 0.5f);
             _isStart = false;

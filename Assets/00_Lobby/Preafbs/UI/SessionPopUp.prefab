@@ -1416,7 +1416,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3967215552320627192, guid: c05ea578c7a384275a044fe71e45f7c3, type: 3}
       propertyPath: m_text
-      value: "\u7AF6\u4E89"
+      value: "\u5BFE\u6226"
       objectReference: {fileID: 0}
     - target: {fileID: 4086440417202300563, guid: c05ea578c7a384275a044fe71e45f7c3, type: 3}
       propertyPath: m_AnchorMax.y

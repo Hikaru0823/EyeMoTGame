@@ -147,6 +147,7 @@ namespace EyeMoT.Fusion
             _isTransitioning = false;
         }
 
+        // UI hook
         public void CreateHostSession()
         {
             SessionDef.Name? availableSession = GetAvailableSessionName();
