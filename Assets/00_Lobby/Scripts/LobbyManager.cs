@@ -73,7 +73,7 @@ namespace EyeMoT.Fusion
 
             Dictionary<string, SessionProperty> customProperties = new Dictionary<string, SessionProperty>
             {
-                { "Mode", 1 },
+                { "Mode", 0 },
             };
 
             Task<StartGameResult> task = runner.StartGame(new StartGameArgs()

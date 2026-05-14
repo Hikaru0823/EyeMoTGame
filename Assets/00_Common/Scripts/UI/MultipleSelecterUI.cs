@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 namespace EyeMoT
 {
-    public class MultipleSelecterUI : MonoBehaviour
+    public class MultipleSelecterUI : SelecterUI
     {
         [Header("Resources")]
         [SerializeField] private Transform _buttonContent;
@@ -18,13 +18,13 @@ namespace EyeMoT
         [SerializeField] private Color _highlightColor;
         [SerializeField] private Color _disabledColor;
         [SerializeField] private int _defaultIdx = 0;
+        [SerializeField] private bool _useSaveData = false;
 
         private int _currentIdx = 0;
         private ButtonData[] _buttons;
 
         void Awake()
         {
-            _currentIdx = _defaultIdx; //Load
             int idx = 0;
             _buttons = new ButtonData[_buttonContent.childCount];
             foreach(Transform child in _buttonContent.transform)
@@ -36,7 +36,12 @@ namespace EyeMoT
                 _buttons[buttonIndex] = new ButtonData(child.Find("Content").GetComponent<Image>(), child.Find("Outline").GetComponent<Image>());
                 idx++;
             }
-            UpdateStatus();
+
+            if(!_useSaveData)
+            {    
+                _currentIdx = _defaultIdx;
+                UpdateStatus();
+            }
         }
 
         public void OnButtonClicked(int idx)
@@ -71,6 +76,33 @@ namespace EyeMoT
                 Background = bg;
                 Outline = outline;
             }
+        }
+    
+        public override void Initialize(int idx)
+        {
+            int i = 0;
+            _buttons = new ButtonData[_buttonContent.childCount];
+            foreach(Transform child in _buttonContent.transform)
+            {
+                if(child == this.transform) continue;
+
+                int buttonIndex = i;
+                child.GetComponent<Button>().onClick.AddListener(() => OnButtonClicked(buttonIndex));
+                _buttons[buttonIndex] = new ButtonData(child.Find("Content").GetComponent<Image>(), child.Find("Outline").GetComponent<Image>());
+                i++;
+            }
+            _currentIdx = idx == -1 ? _defaultIdx : idx;
+            UpdateStatus();
+        }
+
+        public override string[] GetItems()
+        {
+            string[] items = new string[_buttons.Length];
+            for(int i = 0; i < _buttons.Length; i++)
+            {
+                items[i] = _buttons[i].Background.GetComponentInChildren<TMP_Text>().text;
+            }
+            return items;
         }
     }
 }

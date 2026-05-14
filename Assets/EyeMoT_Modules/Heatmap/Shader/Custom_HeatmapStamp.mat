@@ -34,5 +34,5 @@ Material:
     - _Intensity: 0.025
     - _Radius: 0.025
     m_Colors:
-    - _MouseUV: {r: 0.054357998, g: 0.9182026, b: 0, a: 0}
+    - _MouseUV: {r: 0.0861423, g: 0.87619644, b: 0, a: 0}
   m_BuildTextureStacks: []

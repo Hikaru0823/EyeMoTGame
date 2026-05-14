@@ -1841,12 +1841,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b339f5ed4262c443a91608ac895bf93, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _runnerPrefab: {fileID: 6600243272895781529, guid: f458912d382504748999a68282d7836a, type: 3}
-  _registryPrefab: {fileID: 1530208807081796182, guid: ca8836de97674374a95aac9526d1afd3, type: 3}
+  _runnerLifecycleManager: {fileID: 0}
   _sessionListView: {fileID: 421273497153781793}
   _inputProvider: {fileID: 0}
   _lobbyStateText: {fileID: 5995377792470061881}
   SessionHolder: {fileID: 11400000, guid: c1b06b12e4f5b844b8ecfea54c445e61, type: 2}
+  _modeStatuses: []
   _networkTabManager: {fileID: 1470960647520823143}
   _mainTabManager: {fileID: 3753084248273761619}
 --- !u!114 &421273497153781793

@@ -104,7 +104,8 @@ namespace EyeMoT
                     nextButtonAnimator.Play(buttonPressed);
                 }
 
-                StartCoroutine("DisablePreviousPanel");
+                if(gameObject.activeInHierarchy)
+                    StartCoroutine("DisablePreviousPanel");
             }
         }
 

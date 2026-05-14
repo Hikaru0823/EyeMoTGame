@@ -61,8 +61,7 @@ namespace EyeMoT.Heatmap
             _heatRT = CreateRT(_textureSize);
             _tempRT = CreateRT(_textureSize);
 
-            ClearRT(_heatRT);
-            ClearRT(_tempRT);
+            ClearHeatmap();
 
             if (_previewImage != null)
             {

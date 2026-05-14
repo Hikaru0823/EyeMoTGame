@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 namespace EyeMoT
 {
-    public class SingleSelecterUI : MonoBehaviour
+    public class SingleSelecterUI : SelecterUI
     {
         [Header("Resources")]
         [SerializeField] private TMP_Text _windowText;
@@ -19,19 +19,28 @@ namespace EyeMoT
         [Header("Setting")]
         [SerializeField] private string[] _itemTexts;
         [SerializeField] private int _defaultIdx = 0;
+        [SerializeField] private bool _useSaveData = false;
 
         public int CurrentIdx { get; private set; } = 0;
 
         void Awake()
         {
-            CurrentIdx = _defaultIdx; //Load
+            if(!_useSaveData)
+            {    
+                CurrentIdx = _defaultIdx;
+                UpdateStatus();
+            }
+        }
+
+        public override void Initialize(int idx)
+        {
+            CurrentIdx = idx == -1 ? _defaultIdx : idx;
             UpdateStatus();
         }
 
         public void SetItems(string[] itemTexts, int defaultIdx = 0)
         {
             _itemTexts = itemTexts;
-            _defaultIdx = defaultIdx;
             CurrentIdx = _defaultIdx;
             UpdateStatus();
         }
@@ -41,6 +50,11 @@ namespace EyeMoT
             CurrentIdx = isIncrease ? ++CurrentIdx : --CurrentIdx;
             CurrentIdx = Math.Clamp(CurrentIdx, 0, _itemTexts.Length-1);
             UpdateStatus();
+        }
+
+        public override string[] GetItems()
+        {
+            return _itemTexts;
         }
 
         private void UpdateStatus()

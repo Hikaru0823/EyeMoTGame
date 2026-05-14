@@ -41,6 +41,7 @@ namespace EyeMoT
             _inputField.onValueChanged.AddListener(OnInputFieldChanged);
             _mainKeyButtons = _mainKeyButtonsParent.GetComponentsInChildren<MainKeyButton>();
             ConvertMainKey(ConvertType.HIRAGANA);
+            PlayerData.Instance.Nickname = ES3.Load<string>(SaveKeys.PlayerName, defaultValue: "");
             if(string.IsNullOrEmpty(PlayerData.Instance.Nickname))
             {
                 SetRandomPreset();
@@ -131,6 +132,7 @@ namespace EyeMoT
             OnNameChanged?.Invoke(_inputField.text);
             _previewText.text = _inputField.text;
             _characterCountText.text = $"{_inputField.text.Length}/{_characterLimit}";
+            ES3.Save<string>(SaveKeys.PlayerName, _inputField.text);
         }
 
         #region Shake

@@ -31,6 +31,7 @@ namespace EyeMoT.Balloon
         [SerializeField] private int _maxBalloons = 10;
         [SerializeField] private float _balloonSpeed = 2f;
         [SerializeField] private float _offsetFromVolumeEdge = 1.1f;
+        [SerializeField] private bool _visibleCollision = false;
 
         private readonly List<Balloon> _activeBalloons = new List<Balloon>();
         public int BalloonCount => _activeBalloons.Count;
@@ -73,6 +74,7 @@ namespace EyeMoT.Balloon
                         obj.GetComponent<Balloon>().NetworkedColor = randomColor;
                     });
                     newBalloon.StartMove(spawnData.MoveTargetDirection, _balloonSpeed);
+                    newBalloon.VisibleCollision(_visibleCollision);
                     _activeBalloons.Add(newBalloon);
                     break;
                 case GenerationPatern.Fix:
@@ -80,6 +82,7 @@ namespace EyeMoT.Balloon
                         obj.GetComponent<Balloon>().NetworkedColor = randomColor;
                     });
                     newBalloon_fix.GetComponent<NetworkRigidbody3D>().RBIsKinematic = true;
+                    newBalloon_fix.VisibleCollision(_visibleCollision);
                     _activeBalloons.Add(newBalloon_fix);
                     break;
             }

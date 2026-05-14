@@ -14,7 +14,11 @@ namespace EyeMoT.Fusion
         [SerializeField] private TMP_Text[] _playerCountTexts;
         [SerializeField] private TMP_Text _spectatorCountText;
         [SerializeField] private Transform[] _teamPlayerItemHolders;
+        [SerializeField] private GameObject[] _teamHidePanels;
         [SerializeField] private TabManager _tabManager;
+
+        [Header("Settings")]
+        [SerializeField] private int _maxPlayerPerTeam = 4;
 
         private Dictionary<PlayerRef, PlayerItemUI> _playerItems = new Dictionary<PlayerRef, PlayerItemUI>();
         
@@ -80,6 +84,7 @@ namespace EyeMoT.Fusion
                 var team = (PlayerRegistry.TeamState)idx;
                 var count = PlayerRegistry.CountWhere(t => t.Team == team);
                 teamText.text = count.ToString();
+                _teamHidePanels[idx].SetActive(count >= _maxPlayerPerTeam);
                 idx++;
             }
             var spectatorCount = PlayerRegistry.CountWhere(t => t.Team == PlayerRegistry.TeamState.Spectator);
