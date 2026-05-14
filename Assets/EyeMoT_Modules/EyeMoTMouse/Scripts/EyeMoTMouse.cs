@@ -39,7 +39,7 @@ namespace EyeMoT
         {
             #if UNITY_WEBGL || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
             gazeButton.interactable = false;
-            Destroy(this.gameObject);
+            //Destroy(this.gameObject);
             return;
             #endif
             Process[] eyeMoTProceses = Process.GetProcessesByName("EyeMoTMouse");

@@ -1,0 +1,67 @@
+using System;
+using System.IO;
+using UnityEngine;
+
+namespace EyeMoT
+{
+    public class PlayerImageManager : MonoBehaviour
+    {
+        [SerializeField] private string _userImageDirectory = "/YOUR_RESOURCES/Images/";
+        [SerializeField] private int _maxImageSize = 512;
+        [SerializeField] private Transform _imageContent;
+        [SerializeField] private ImageItemUI _imagePrefab;
+        [SerializeField] private GameObject _loadingObject;
+        [SerializeField] private float _loadOffset = 0.5f;
+
+        private string CurrentUserImageDirectory => Directory.GetParent(Application.dataPath)?.FullName + _userImageDirectory;
+
+        public void OnButtonClicked()
+        {
+            ClearImageContent();
+            LoadUserImages();
+        }
+
+        private void ClearImageContent()
+        {
+            for (int i = _imageContent.childCount - 1; i >= 0; i--)
+            {
+                Destroy(_imageContent.GetChild(i).gameObject);
+            }
+        }
+
+        public async void LoadUserImages()
+        {
+            #if UNITY_WEBGL && !UNITY_EDITOR
+            Debug.Log($"<color=orange>[ImageLoader]</color> WebGL platform does not support ImageLoader. Initialization skipped.");
+            return;
+            #endif
+            string directoryPath = CurrentUserImageDirectory;
+            Debug.Log($"<color=orange>[ImageLoader]</color>Loading user images from: {directoryPath}");
+
+            try
+            {
+                _loadingObject.SetActive(true);
+                await System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(_loadOffset));
+                var imageInfos = await ImageDirectoryLoader.LoadResizedImagesAsync(directoryPath, _maxImageSize);
+                foreach (var imageInfo in imageInfos)
+                {
+                    Debug.Log($"<color=orange>[ImageLoader]</color>Loaded image: {imageInfo.FilePath}, Size: {imageInfo.Texture.width}x{imageInfo.Texture.height}");
+                    // Here you can convert the byte array to a Texture2D and use it in your game
+                    Texture2D texture = new Texture2D(imageInfo.Texture.width, imageInfo.Texture.height);
+                    texture.LoadImage(imageInfo.Texture.EncodeToPNG());
+
+                    var imageItem = Instantiate(_imagePrefab, _imageContent);
+                    imageItem.SetImage(texture);
+                }
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError($"<color=red>[ImageLoader]</color>Failed to load user images from {directoryPath}: {exception}");
+            }
+            finally
+            {
+                _loadingObject.SetActive(false);
+            }
+        }
+    }
+}

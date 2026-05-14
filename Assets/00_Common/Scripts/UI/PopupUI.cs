@@ -27,14 +27,14 @@ public class PopupUI : Singleton<PopupUI>
         Cursor.lockState = CursorLockMode.None;
 
         Instance.okButton.onClick.RemoveAllListeners();
-        if (onClose != null)
+        Instance.okButton.onClick.AddListener(() =>
         {
-            Instance.okButton.onClick.AddListener(() =>
+            Instance.CloseButton();
+            if (onClose != null)
             {
-                Instance.CloseButton();
                 onClose.Invoke();
-            });
-        }
+            }
+        });
     }
 
     public static void OnVisible(string title, string description, Type type, UnityEngine.Events.UnityAction onClose = null)
@@ -48,14 +48,14 @@ public class PopupUI : Singleton<PopupUI>
         Cursor.lockState = CursorLockMode.None;
 
         Instance.okButton.onClick.RemoveAllListeners();
-        if (onClose != null)
+        Instance.okButton.onClick.AddListener(() =>
         {
-            Instance.okButton.onClick.AddListener(() =>
+            Instance.CloseButton();
+            if (onClose != null)
             {
-                Instance.CloseButton();
                 onClose.Invoke();
-            });
-        }
+            }
+        });
     }
 
 	public void CloseButton()

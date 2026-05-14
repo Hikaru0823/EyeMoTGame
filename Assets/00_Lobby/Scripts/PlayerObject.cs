@@ -53,7 +53,7 @@ namespace EyeMoT.Fusion
             if (Object.HasInputAuthority)
             {
                 Local = this;
-                Rpc_SetPlayerData(PlayerData.Instance.Nickname + $"_{Index}", PlayerData.Instance.CharacterName + $"_{Index}");
+                Rpc_SetPlayerData(PlayerData.Instance.Nickname, PlayerData.Instance.CharacterName);
             }
 
             if(Team != PlayerRegistry.TeamState.None && IndexByTeam != 255)

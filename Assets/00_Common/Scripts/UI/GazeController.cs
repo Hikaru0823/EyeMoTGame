@@ -16,6 +16,7 @@ namespace EyeMoT
         public float gazeTime = 1.5f;
         public bool isSelectable = false;
         public bool isContinueClickable = true;
+        public bool Enable = true;
         bool _isStart = false;
         bool _isSelect = false;
         float _time = 0;
@@ -34,6 +35,8 @@ namespace EyeMoT
 
         void LateUpdate()
         {
+            if(!Enable)
+                return;
             if(_isStart)
             {
                 if(!button.interactable)
@@ -51,6 +54,8 @@ namespace EyeMoT
 
         public void OnPointerEnter(PointerEventData eventData)
         {
+            if(!Enable)
+                return;
             if(_isSelect)
                 return;
             if(!button.interactable)
@@ -60,6 +65,8 @@ namespace EyeMoT
 
         public void OnPointerExit(PointerEventData eventData)
         {
+            if(!Enable)
+                return;
             if(_isSelect)
                 return;
             if(!button.interactable)
