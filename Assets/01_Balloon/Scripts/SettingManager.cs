@@ -22,17 +22,28 @@ namespace EyeMoT.Balloon
             {
                 GameData = saveData.GameData;
                 BalloonData = saveData.BalloonData;
+                _gameDataSelecter.BalloonAmount.Initialize(Array.FindIndex(_gameDataSelecter.BalloonAmount.GetItems(), x => x.Contains(GameData.BalloonAmount.ToString() + " 個")) );
+                _gameDataSelecter.GameTime.Initialize(Array.FindIndex(_gameDataSelecter.GameTime.GetItems(), x => x.Contains(GameData.GameTime.ToString() + " 秒")) );
+                _gameDataSelecter.BalloonGeneratePatern.Initialize((int)GameData.BalloonGeneratePatern);
+                _gameDataSelecter.BGColor.Initialize((int)GameData.BGColor);
+
+                _balloonDataSelecter.CollisionScale.Initialize(Array.FindIndex(_balloonDataSelecter.CollisionScale.GetItems(), x => x.Contains(BalloonData.CollisionScale.ToString("F1") + " 倍")) );
+                _balloonDataSelecter.VisualScale.Initialize(Array.FindIndex(_balloonDataSelecter.VisualScale.GetItems(), x => x.Contains(BalloonData.VisualScale.ToString("F1") + " 倍")) );
+                _balloonDataSelecter.LifeTime.Initialize(Array.FindIndex(_balloonDataSelecter.LifeTime.GetItems(), x => x.Contains(BalloonData.LifeTime.ToString("F1") + " 秒")) );
+                _balloonDataSelecter.VFXIdx.Initialize(BalloonData.VFXIdx);
             }
+            else
+            {
+                _gameDataSelecter.BalloonAmount.Initialize(-1);
+                _gameDataSelecter.GameTime.Initialize(-1);
+                _gameDataSelecter.BalloonGeneratePatern.Initialize(-1);
+                _gameDataSelecter.BGColor.Initialize(-1);
 
-            _gameDataSelecter.BalloonAmount.Initialize(Array.FindIndex(_gameDataSelecter.BalloonAmount.GetItems(), x => x.Contains(GameData.BalloonAmount.ToString() + " 個")) );
-            _gameDataSelecter.GameTime.Initialize(Array.FindIndex(_gameDataSelecter.GameTime.GetItems(), x => x.Contains(GameData.GameTime.ToString() + " 秒")) );
-            _gameDataSelecter.BalloonGeneratePatern.Initialize((int)GameData.BalloonGeneratePatern);
-            _gameDataSelecter.BGColor.Initialize((int)GameData.BGColor);
-
-            _balloonDataSelecter.CollisionScale.Initialize(Array.FindIndex(_balloonDataSelecter.CollisionScale.GetItems(), x => x.Contains(BalloonData.CollisionScale.ToString("F1") + " 倍")) );
-            _balloonDataSelecter.VisualScale.Initialize(Array.FindIndex(_balloonDataSelecter.VisualScale.GetItems(), x => x.Contains(BalloonData.VisualScale.ToString("F1") + " 倍")) );
-            _balloonDataSelecter.LifeTime.Initialize(Array.FindIndex(_balloonDataSelecter.LifeTime.GetItems(), x => x.Contains(BalloonData.LifeTime.ToString("F1") + " 秒")) );
-            _balloonDataSelecter.VFXIdx.Initialize(BalloonData.VFXIdx);
+                _balloonDataSelecter.CollisionScale.Initialize(-1);
+                _balloonDataSelecter.VisualScale.Initialize(-1);
+                _balloonDataSelecter.LifeTime.Initialize(-1);
+                _balloonDataSelecter.VFXIdx.Initialize(-1);
+            }
         }
 
         void OnApplicationQuit()
@@ -50,7 +61,7 @@ namespace EyeMoT.Balloon
 
             string json =JsonUtility.ToJson(saveData, true);
             ES3.Save<string>(SaveKeys.BalloonGameData, json);
-            Debug.Log(json);
+            //Debug.Log(json);
         }
 
         private static string FormatSaveJson(string json, SaveData saveData)
@@ -80,7 +91,7 @@ namespace EyeMoT.Balloon
             }
 
             string json = ES3.Load<string>(SaveKeys.BalloonGameData);
-            Debug.Log(json);
+            //Debug.Log(json);
             SaveData saveData = JsonUtility.FromJson<SaveData>(json);
 
             return saveData;

@@ -5480,7 +5480,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -450, y: 0}
+  m_AnchoredPosition: {x: -475.3, y: 0}
   m_SizeDelta: {x: 280, y: 150}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!1001 &362962326
@@ -23688,8 +23688,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: 22.1, y: 0}
-  m_SizeDelta: {x: 226.1, y: 150}
+  m_AnchoredPosition: {x: 107.184906, y: 0}
+  m_SizeDelta: {x: 287.1826, y: 150}
   m_Pivot: {x: 1, y: 0.5}
 --- !u!114 &1516619957
 MonoBehaviour:
@@ -23711,7 +23711,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\xD799"
+  m_text: "\xD7 999"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: faa632b56c359924d9d1ad01adac1df2, type: 2}
   m_sharedMaterial: {fileID: -4420371776783486457, guid: faa632b56c359924d9d1ad01adac1df2, type: 2}
@@ -23745,7 +23745,7 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
-  m_HorizontalAlignment: 2
+  m_HorizontalAlignment: 1
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
@@ -26422,7 +26422,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6790976994969012974, guid: 052d659feaf0f4895be0928b524f266c, type: 3}
       propertyPath: _defaultIdx
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6790976994969012974, guid: 052d659feaf0f4895be0928b524f266c, type: 3}
       propertyPath: _useSaveData
@@ -26430,27 +26430,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6790976994969012974, guid: 052d659feaf0f4895be0928b524f266c, type: 3}
       propertyPath: _itemTexts.Array.size
-      value: 6
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 6790976994969012974, guid: 052d659feaf0f4895be0928b524f266c, type: 3}
       propertyPath: _itemTexts.Array.data[0]
-      value: "10 \u79D2"
-      objectReference: {fileID: 0}
-    - target: {fileID: 6790976994969012974, guid: 052d659feaf0f4895be0928b524f266c, type: 3}
-      propertyPath: _itemTexts.Array.data[1]
-      value: "20 \u79D2"
-      objectReference: {fileID: 0}
-    - target: {fileID: 6790976994969012974, guid: 052d659feaf0f4895be0928b524f266c, type: 3}
-      propertyPath: _itemTexts.Array.data[2]
       value: "30 \u79D2"
       objectReference: {fileID: 0}
     - target: {fileID: 6790976994969012974, guid: 052d659feaf0f4895be0928b524f266c, type: 3}
+      propertyPath: _itemTexts.Array.data[1]
+      value: "60 \u79D2"
+      objectReference: {fileID: 0}
+    - target: {fileID: 6790976994969012974, guid: 052d659feaf0f4895be0928b524f266c, type: 3}
+      propertyPath: _itemTexts.Array.data[2]
+      value: "120 \u79D2"
+      objectReference: {fileID: 0}
+    - target: {fileID: 6790976994969012974, guid: 052d659feaf0f4895be0928b524f266c, type: 3}
       propertyPath: _itemTexts.Array.data[3]
-      value: "40 \u79D2"
+      value: "150 \u79D2"
       objectReference: {fileID: 0}
     - target: {fileID: 6790976994969012974, guid: 052d659feaf0f4895be0928b524f266c, type: 3}
       propertyPath: _itemTexts.Array.data[4]
-      value: "50 \u79D2"
+      value: "180 \u79D2"
       objectReference: {fileID: 0}
     - target: {fileID: 6790976994969012974, guid: 052d659feaf0f4895be0928b524f266c, type: 3}
       propertyPath: _itemTexts.Array.data[5]
@@ -30242,6 +30242,10 @@ PrefabInstance:
     - target: {fileID: 3737362316727049317, guid: 052d659feaf0f4895be0928b524f266c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6790976994969012974, guid: 052d659feaf0f4895be0928b524f266c, type: 3}
+      propertyPath: _defaultIdx
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 6790976994969012974, guid: 052d659feaf0f4895be0928b524f266c, type: 3}
       propertyPath: _useSaveData
