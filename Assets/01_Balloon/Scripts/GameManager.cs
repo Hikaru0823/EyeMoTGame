@@ -33,6 +33,8 @@ namespace EyeMoT.Balloon
             LobbyManager.OnReleaseAll += GameExit;
             Timer.OnTimeUpdated -= UpdateGameTime;
             Timer.OnTimeUpdated += UpdateGameTime;
+            Timer.onTimeUp -= OnTimeUp;
+            Timer.onTimeUp += OnTimeUp;
             PlayerContent.OnAllReady -= GameStart;
             PlayerContent.OnAllReady += GameStart;
 
@@ -71,7 +73,7 @@ namespace EyeMoT.Balloon
 
             if(!LobbyManager.Instance.Runner.IsServer) return;
 
-            Timer.Instance.TickStarted = LobbyManager.Instance.Runner.Tick;
+            Timer.Instance.StartTimer(LobbyManager.Instance.Runner.Tick, SettingManager.Instance.GameData.GameTime);
 
             BalloonSpawnManager.Instance.SpawnInitialBalloons(SettingManager.Instance.GameData.BalloonGeneratePatern);
 
@@ -142,15 +144,14 @@ namespace EyeMoT.Balloon
         private void UpdateGameTime(float time)
         {
             if(!_isStart) return;
-            _time = SettingManager.Instance.GameData.GameTime - time;
-            //_time = 5 - time;
-            _gameTimeText.text = _time.ToString("F1") + "s";
 
-            if(_time <= 0)
-            {
-                _isStart = false;
-                GameEnd();
-            }
+            _gameTimeText.text = time.ToString("F1") + "s";
+        }
+
+        private void OnTimeUp()
+        {
+            _isStart = false;
+            GameEnd();
         }
 
         //UIhook
