@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using EyeMoT.Fusion;
 using EyeMoT.Heatmap;
@@ -6,6 +8,7 @@ using Fusion;
 using Fusion.Sockets;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace EyeMoT.Balloon
 {
@@ -16,83 +19,141 @@ namespace EyeMoT.Balloon
         [SerializeField] private GameObject _retryButton;
         [SerializeField] private TMP_Text _balloonCountText;
         [SerializeField] private SingleSelecterUI _heatmapSelecter;
-        [SerializeField] private GameObject _notReceivedHeatmapPanel;
-        [SerializeField] private ResultItemUI _resultPropertyPrefab;
-        [SerializeField] private ResultItemUI _resultItemPrefab;
-        [SerializeField] private Transform _resultItemContent;
-
-        private RenderTexture[] _heatmapTextures = new RenderTexture[4];
-        private bool[] _heatmapTextureReady = new bool[4]{false, false, false, false};
-        private PlayerObject[] _heatmapPlayerOrder = Array.Empty<PlayerObject>();
-
+        [SerializeField] private Transform _teamResultItemHolder;
+        [SerializeField] private TeamResultItemUI[] _teamResultItems;
+        [SerializeField] private HeatmapTextureData[] _heatmapTextureData;
+        private PlayerObject[] _heatmapPlayer_FirstIsLocal;
         void Start()
         {
             LobbyManager.OnReliableDataReceivedEvent -= OnReliableDataReceived;
             LobbyManager.OnReliableDataReceivedEvent += OnReliableDataReceived;
+            LobbyManager.OnReliableDataProgressEvent -= OnReliableDataProgress;
+            LobbyManager.OnReliableDataProgressEvent += OnReliableDataProgress;
         }
-        
+
+        void ResetHeatmapData()
+        {
+            foreach (var data in _heatmapTextureData)
+            {
+                data._heatmapImage.texture = null;
+                data.IsReady = false;
+                data._heatmapImage.enabled = false;
+                data._noneReceivedPanel.SetActive(false);
+                data._progressBar.fillAmount = 0f;
+            }
+        }
+
         public void StartRecordHeatmap(PlayerObject[] players)
         {
             _resultTabManager.OpenPanel("Score");
 
+            HeatmapRenderer.Instance.ClearHeatmap();
             if(PlayerObject.Local.Team != PlayerRegistry.TeamState.Spectator)
                 HeatmapRenderer.Instance.StartHeatmap("01_Balloon", true);
-            HeatmapRenderer.Instance.ClearHeatmap();
-            _heatmapTextures = new RenderTexture[4];
-            _heatmapTextureReady = new bool[4]{false, false, false, false};
             _balloonCountText.text = "× 0";
-            _heatmapPlayerOrder = CreateLocalFirstPlayerOrder(players);
-            _heatmapSelecter.SetItems(_heatmapPlayerOrder.Select(player => player.Nickname).ToArray(), 0);
+            ResetHeatmapData();
+            for (int i = 0; i < players.Length; i++)
+            {
+                _heatmapTextureData[i].Player = players[i];
+            }
+            _heatmapPlayer_FirstIsLocal = CreateLocalFirstPlayerOrder(players);
+            _heatmapSelecter.SetItems(_heatmapPlayer_FirstIsLocal.Select(player => player.Nickname).ToArray(), 0);
         }
 
         public void StopRecordHeatmap()
         {
             if(PlayerObject.Local.Team != PlayerRegistry.TeamState.Spectator)
                 HeatmapRenderer.Instance.StopHeatmap(false);
-            HeatmapRenderer.Instance.VisibleHeatmap(false);
         }
 
         public void ShowResult()
         {
-            foreach(var item in _resultItemContent.GetComponentsInChildren<ResultItemUI>())
+            StartCoroutine(ShowResultRoutine());
+        }
+
+        private IEnumerator ShowResultRoutine()
+        {
+            foreach (var item in _teamResultItems)
             {
-                Destroy(item.gameObject);
+                item.ClearPlayerResults();
             }
+
+            yield return null;
 
             _retryButton.SetActive(PlayerObject.Local.Team != PlayerRegistry.TeamState.Spectator);
 
-            if(PlayerObject.Local.Team != PlayerRegistry.TeamState.Spectator)
+            if (PlayerObject.Local.Team != PlayerRegistry.TeamState.Spectator)
             {
                 var heatmapResult = HeatmapRenderer.Instance.StopHeatmap();
-                _heatmapTextures[PlayerObject.Local.IndexByTeam] = heatmapResult.HeatmapTexture;
-                _heatmapTextureReady[PlayerObject.Local.IndexByTeam] = true;
+                _heatmapTextureData[PlayerObject.Local.Index]._heatmapImage.texture = heatmapResult.HeatmapTexture;
+                _heatmapTextureData[PlayerObject.Local.Index].IsReady = true;
                 SendHeatmapTextureToServer(heatmapResult.HeatmapTexture);
             }
 
             var rankedPlayers = PlayerContent.Everyone
-                    .OrderByDescending(kvp => kvp.NetwrokedBalloonCount)
-                    .ToArray();
-            
-            Instantiate(_resultPropertyPrefab, _resultItemContent);
-            for(int i = 0; i < rankedPlayers.Length; i++)
+                .OrderByDescending(kvp => kvp.NetwrokedBalloonCount)
+                .ToArray();
+
+            var teamScores = new Dictionary<PlayerRegistry.TeamState, int>()
+            {
+                { PlayerRegistry.TeamState.Red, 0 },
+                { PlayerRegistry.TeamState.Blue, 0 },
+                { PlayerRegistry.TeamState.Green, 0 },
+                { PlayerRegistry.TeamState.Yellow, 0 },
+            };
+
+            for (int i = 0; i < rankedPlayers.Length; i++)
             {
                 var player = rankedPlayers[i];
                 var plObj = PlayerRegistry.GetPlayer(player.Object.InputAuthority);
-                var item = Instantiate(_resultItemPrefab, _resultItemContent);
-                int modeIdx = 0;
-                if (LobbyManager.Instance.Runner.SessionInfo.Properties.TryGetValue("Mode", out SessionProperty modeProperty) && modeProperty.IsInt)
-                    modeIdx = modeProperty;
-                item.Init(plObj.Nickname, player.NetwrokedBalloonCount, (SessionDef.Mode)modeIdx == SessionDef.Mode.COLLABOLATION ? -1 : i);
+
+                var teamResultItem = _teamResultItems[(int)plObj.Team];
+
+                teamScores[plObj.Team] += player.NetwrokedBalloonCount;
+                teamResultItem.AddPlayerResult(plObj.Nickname, player.NetwrokedBalloonCount);
             }
+
+            var sortedTeamScores = teamScores.OrderByDescending(s => s.Value).ToArray();
+
+            var topScore = sortedTeamScores[0].Value;
+            for (int i = 0; i < _teamResultItems.Length; i++)
+            {
+                var team = sortedTeamScores[i].Key;
+                var item = _teamResultItems[(int)team];
+
+                item.Init(sortedTeamScores[i].Value, topScore == sortedTeamScores[i].Value ? 0 : 1);
+                item.transform.SetAsLastSibling();
+    }
+
+            yield return null;
+
+            Canvas.ForceUpdateCanvases();
+
+            foreach (var item in _teamResultItems)
+            {
+                item.RebuildLayout();
+            }
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(
+                _teamResultItemHolder.GetComponent<RectTransform>()
+            );
+
+            Canvas.ForceUpdateCanvases();
         }
 
         //UIHook
         public void GameRestart()
         {
             GameManager.Instance.GameRestart();
-            HeatmapRenderer.Instance.VisibleHeatmap(false);
             LineBeam.Local?.Rpc_SetReadyState(true);
         }
+        //UIHook
+        public void OnHeatmapButtonClicked()
+        {
+            _resultTabManager.OpenPanel("Heatmap");
+            ShowHeatmapChange();
+        }
+
 
         private void SendHeatmapTextureToServer(RenderTexture texture)
         {
@@ -108,7 +169,7 @@ namespace EyeMoT.Balloon
                 return;
             }
 
-            int playerIndex = PlayerObject.Local != null ? PlayerObject.Local.IndexByTeam : 255;
+            int playerIndex = PlayerObject.Local != null ? PlayerObject.Local.Index : 255;
             ReliableKey reliableKey = ReliableKey.FromInts(1, playerIndex, Time.frameCount, 0);
 
             runner.SendReliableDataToServer(reliableKey, pngBytes);
@@ -175,11 +236,24 @@ namespace EyeMoT.Balloon
             }
 
             RenderTexture heatmapTexture = DecodeImageBytesToRenderTexture(heatmapPngBytes);
-            _heatmapTextures[playerIndex] = heatmapTexture;
-            _heatmapTextureReady[playerIndex] = true;
+            _heatmapTextureData[playerIndex]._heatmapImage.texture = heatmapTexture;
+            _heatmapTextureData[playerIndex].IsReady = true;
+            _heatmapTextureData[playerIndex]._progressBar.fillAmount = 1f;
             ShowHeatmapChange();
 
             Debug.Log($"<color=orange>[HeatMap]</color> Received heatmap from {player} index {playerIndex}: {heatmapPngBytes.Length} bytes");
+        }
+
+        private void OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey key, float progress)
+        {
+            key.GetInts(out int dataType, out int playerIndex, out int frameCount, out int reserved);
+            if (dataType != 1)
+            {
+                return;
+            }
+
+            //Debug.Log($"<color=yellow>[HeatMap]</color> Receiving heatmap from {player} index {playerIndex}: {progress * 100f}%");
+            _heatmapTextureData[playerIndex]._progressBar.fillAmount = progress;
         }
 
         private void BroadcastHeatmapBytesToClients(NetworkRunner runner, ReliableKey key, byte[] heatmapPngBytes, PlayerRef excludePlayer = default)
@@ -194,22 +268,19 @@ namespace EyeMoT.Balloon
                 runner.SendReliableDataToPlayer(playerObject.Ref, key, heatmapPngBytes);
             }
         }
-
         public void ShowHeatmapChange()
         {
             if(_resultTabManager.GetCurrentPanelName() != "Heatmap")
                 return;
 
-            int playerIndex = _heatmapPlayerOrder[_heatmapSelecter.CurrentIdx].IndexByTeam;
-            _balloonCountText.text = "× " + (PlayerContent.GetPlayer(_heatmapPlayerOrder[_heatmapSelecter.CurrentIdx].Ref)?.NetwrokedBalloonCount.ToString() ?? "0");
-            if (!_heatmapTextureReady[playerIndex])
-            {
-                _notReceivedHeatmapPanel.SetActive(true);
-                HeatmapRenderer.Instance.VisibleHeatmap(false);
-                return;
-            }
-            _notReceivedHeatmapPanel.SetActive(false);
-            HeatmapRenderer.Instance.VisibleHeatmap(true, _heatmapTextures[playerIndex]);
+            foreach (var data in _heatmapTextureData)
+                data._heatmapImage.gameObject.SetActive(false);
+
+            int playerIndex = _heatmapPlayer_FirstIsLocal[_heatmapSelecter.CurrentIdx].Index;
+            _balloonCountText.text = "× " + (PlayerContent.GetPlayer(_heatmapTextureData[playerIndex].Player.Ref)?.NetwrokedBalloonCount.ToString() ?? "0");
+            _heatmapTextureData[playerIndex]._heatmapImage.gameObject.SetActive(true);
+            _heatmapTextureData[playerIndex]._heatmapImage.enabled = _heatmapTextureData[playerIndex].IsReady;
+            _heatmapTextureData[playerIndex]._noneReceivedPanel.SetActive(!_heatmapTextureData[playerIndex].IsReady);
         }
 
         private PlayerObject[] CreateLocalFirstPlayerOrder(PlayerObject[] sortedPlayers)
@@ -221,12 +292,12 @@ namespace EyeMoT.Balloon
             }
 
             PlayerObject[] localFirstPlayers = new PlayerObject[sortedPlayers.Length];
-            localFirstPlayers[0] = sortedPlayers[localPlayer.IndexByTeam];
+            localFirstPlayers[0] = sortedPlayers[localPlayer.Index];
 
             int targetIndex = 1;
             for (int i = 0; i < sortedPlayers.Length; i++)
             {
-                if (i == localPlayer.IndexByTeam)
+                if (i == localPlayer.Index)
                     continue;
 
                 localFirstPlayers[targetIndex] = sortedPlayers[i];
@@ -235,5 +306,15 @@ namespace EyeMoT.Balloon
 
             return localFirstPlayers;
         }
+    }
+
+    [Serializable]
+    public class HeatmapTextureData
+    {
+        [SerializeField] public RawImage _heatmapImage;
+        [SerializeField] public GameObject _noneReceivedPanel;
+        [SerializeField] public Image _progressBar;
+        [SerializeField] public bool IsReady;
+        public PlayerObject Player;
     }
 }

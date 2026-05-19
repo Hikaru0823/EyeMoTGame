@@ -19,6 +19,14 @@ namespace EyeMoT
             UpdateState(_currentState);
         }
 
+        void Update()
+        {
+            if(Input.GetKeyDown(KeyCode.B))
+            {
+                OnClicked();
+            }
+        }
+
         public void OnClicked()
         {
             _currentState = (_currentState + 1) % 4;

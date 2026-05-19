@@ -14,6 +14,7 @@ namespace EyeMoT.Fusion
 
         public enum Mode
         {
+            NONE = -1,
             COLLABOLATION,
             MUSTCH,
         }

@@ -17,13 +17,6 @@ namespace EyeMoT.Balloon
 {
     public class GameManager : SceneSingleton<GameManager>
     {
-        public static Color[] TeamColor = new Color[4]
-        {
-            Color.red,
-            Color.blue,
-            Color.yellow,
-            Color.green,
-        };
         [Header("Resources")]
         [SerializeField] private PlayerContent _playerContentPrefab;
         [SerializeField] private LineBeam _playerPrefab;
@@ -64,8 +57,8 @@ namespace EyeMoT.Balloon
             BGMManager.Instance.Play(BGMPath.BALLOON_GAME, volumeRate: 0.5f);
 
             var players = PlayerRegistry.Players
-                    .Where(kvp => kvp.Team == PlayerRegistry.TeamState.TeamA && kvp.IndexByTeam != 255)
-                    .OrderBy(kvp => kvp.IndexByTeam)
+                    .Where(kvp => kvp.Team != PlayerRegistry.TeamState.Spectator && kvp.Team != PlayerRegistry.TeamState.None)
+                    .OrderBy(kvp => kvp.Index)
                     .ToArray();
 
             ResultManager.Instance.StartRecordHeatmap(players);
@@ -92,7 +85,7 @@ namespace EyeMoT.Balloon
 
             foreach(var player in players)
             {
-                var obj = LobbyManager.Instance.Runner.Spawn(_playerPrefab, new Vector3(offset + player.IndexByTeam * 2, 0, 4.3f), Quaternion.identity, player.Ref);
+                var obj = LobbyManager.Instance.Runner.Spawn(_playerPrefab, new Vector3(offset + player.Index * 2, 0, 4.3f), Quaternion.identity, player.Ref);
                 LobbyManager.Instance.Runner.SetPlayerObject(player.Ref, obj.GetComponent<NetworkObject>());
                 PlayerContent.Instance.Server_Add(player.Ref, obj.GetComponent<LineBeam>());    
             }
@@ -134,15 +127,16 @@ namespace EyeMoT.Balloon
             Init();
         }
 
-        public void UpdateBalloonCount()
+        public int UpdateBalloonCount()
         {
-            if(!_isStart) return;
+            if(!_isStart) return 0;
             //var count = 0;
             // foreach(var player in PlayerContent.Everyone)
             //     count ++= player.NetwrokedBalloonCount;
             //_balloonCount = count;
             _balloonCount ++;
             _balloonCountText.text = "×" + _balloonCount;
+            return _balloonCount;
         }
 
         private void UpdateGameTime(float time)

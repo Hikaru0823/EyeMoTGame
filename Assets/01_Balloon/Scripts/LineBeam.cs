@@ -15,6 +15,8 @@ namespace EyeMoT.Balloon
         [SerializeField] private GameObject _targetImage;
         [SerializeField] private Renderer _visualRenderer;
         [SerializeField] private GameObject _readyStateVisual;
+        [SerializeField] private ResultItemUI _resultItem;
+        [SerializeField] private RectTransform _worldCanvas;
         private Camera _targetCamera;
 
         [Header("Settings")]
@@ -35,6 +37,7 @@ namespace EyeMoT.Balloon
         private bool _isBeamSoundPlaying;
         private bool _componentsInitialized;
         private double _nextHitNotifyTime;
+        private Vector3 _initWorldCanvasPosition;
         [Networked, OnChangedRender(nameof(OnNetworkedReadyChanged))] 
         public bool NetworkedReady { get; set; } = false;
 
@@ -83,11 +86,17 @@ namespace EyeMoT.Balloon
             ApplyNetworkedVisuals();
         }
 
+        private void LateUpdate()
+        {
+            _worldCanvas.position = _initWorldCanvasPosition;
+        }
+
         private void InitializeComponents()
         {
             if (_componentsInitialized)
                 return;
 
+            _initWorldCanvasPosition = _worldCanvas.position;
             _targetCamera = Camera.main;
             _readyStateVisual.SetActive(false);
 
@@ -95,9 +104,10 @@ namespace EyeMoT.Balloon
                 _lineRenderer.enabled = false;
 
             _targetImage.transform.localScale = Vector3.one * SettingManager.Instance.BalloonData.VisualScale * _targetImageScaleOnMiss;
-            var teamColor = GameManager.TeamColor[PlayerRegistry.GetPlayer(Object.InputAuthority)?.IndexByTeam ?? 0];
+            var teamColor = PlayerRegistry.TeamColor[(int)PlayerRegistry.GetPlayer(Object.InputAuthority).Team];
             _targetImage.GetComponent<SpriteRenderer>().color = Object.HasInputAuthority ? teamColor : new Color(teamColor.r, teamColor.g, teamColor.b, _noLocalAlpha);
             _visualRenderer.material.color = teamColor;
+            _resultItem.Init(PlayerRegistry.GetPlayer(Object.InputAuthority).Nickname, 0, null, new Color(teamColor.r, teamColor.g, teamColor.b, 0.2f));
 
             if(LobbyManager.Instance.Runner.GameMode == GameMode.Single)
             {    
@@ -328,14 +338,15 @@ namespace EyeMoT.Balloon
         private void UpdateBalloonCount()
         {
             if(NetwrokedBalloonCount <= 0) return;
-            int modeIdx = 0;
-            if (LobbyManager.Instance.Runner.SessionInfo.Properties.TryGetValue("Mode", out SessionProperty modeProperty) && modeProperty.IsInt)
-                modeIdx = modeProperty;
-            if((SessionDef.Mode)modeIdx == SessionDef.Mode.COLLABOLATION)
+
+            _resultItem.UpdateScore(NetwrokedBalloonCount);
+
+            if(LobbyManager.Instance.GetCurrentMode() == SessionDef.Mode.COLLABOLATION)
                 GameManager.Instance.UpdateBalloonCount();
             else
             {
                 if(!Object.HasInputAuthority) return;
+                if(PlayerObject.Local.Team != PlayerRegistry.GetPlayer(Object.InputAuthority).Team) return;
                 GameManager.Instance.UpdateBalloonCount();
             }
         }

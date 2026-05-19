@@ -18,12 +18,22 @@ namespace EyeMoT.Fusion
         [SerializeField] private TabManager _tabManager;
 
         [Header("Settings")]
-        [SerializeField] private int _maxPlayerPerTeam = 4;
+        [SerializeField] private int _maxPlayers = 4;
 
         private Dictionary<PlayerRef, PlayerItemUI> _playerItems = new Dictionary<PlayerRef, PlayerItemUI>();
         
         void Init()
         {
+            for(int i = 0; i < _teamHidePanels.Length; i++)
+                _teamHidePanels[i].SetActive(false);
+
+            if(LobbyManager.Instance.GetCurrentMode() == SessionDef.Mode.COLLABOLATION)
+            {
+                // コラボモードの場合はチーム分けなしなので、チーム2~4のUIは非表示にする
+                for(int i = 1; i < _teamHidePanels.Length; i++)
+                    _teamHidePanels[i].SetActive(true);
+            }
+
             Reset();
             PlayerRegistry.OnPlayerRegistered -= OnPlayerRegistered;
             PlayerRegistry.OnPlayerRegistered += OnPlayerRegistered;
@@ -46,11 +56,11 @@ namespace EyeMoT.Fusion
 
             UpdateText();
 
-            if(plObj.Team == PlayerRegistry.TeamState.None || plObj.Team == PlayerRegistry.TeamState.Spectator || plObj.IndexByTeam == 255)
+            if(plObj.Team == PlayerRegistry.TeamState.None || plObj.Team == PlayerRegistry.TeamState.Spectator)
                 return;
 
             var teamitem = GetPlayerItem(pRef, plObj.Team);
-            teamitem.Init(pRef, plObj.Nickname);
+            teamitem.Init(pRef, plObj.Nickname, Color.white);
         }
 
         void OnPlayerLeft(NetworkRunner runner, PlayerRef pRef)
@@ -84,10 +94,16 @@ namespace EyeMoT.Fusion
                 var team = (PlayerRegistry.TeamState)idx;
                 var count = PlayerRegistry.CountWhere(t => t.Team == team);
                 teamText.text = count.ToString();
-                _teamHidePanels[idx].SetActive(count >= _maxPlayerPerTeam);
                 idx++;
             }
-            var spectatorCount = PlayerRegistry.CountWhere(t => t.Team == PlayerRegistry.TeamState.Spectator);
+
+            if(PlayerRegistry.CountPlayers >= _maxPlayers)
+            {
+                for(int i = 0; i < _teamHidePanels.Length; i++)
+                    _teamHidePanels[i].SetActive(true);
+            }
+
+            var spectatorCount = PlayerRegistry.CountSpectators;
             _spectatorCountText.text = spectatorCount.ToString();
         }
 

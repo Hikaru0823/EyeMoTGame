@@ -11,11 +11,11 @@ namespace EyeMoT.Fusion
     {
         [Header("Resources")]
         [SerializeField] private PlayerItemUI _playerItemPrefab;
+        [SerializeField] private GameObject _readyButton;
         [SerializeField] private Transform[] _playerItemHolders;
         [SerializeField] private TMP_Text _spectatorCountText;
         [SerializeField] private GameObject _hidePanel;
 
-        private Transform[][] _playerItemParents;
         private Dictionary<PlayerRef, PlayerItemUI> _playerItems = new Dictionary<PlayerRef, PlayerItemUI>();
 
         void Init()
@@ -32,29 +32,21 @@ namespace EyeMoT.Fusion
             LobbyManager.OnInitAll -= Init;
             LobbyManager.OnInitAll += Init;
 
-            _playerItemParents = new Transform[_playerItemHolders.Length][];
-
-            for (int i = 0; i < _playerItemHolders.Length; i++)
-            {
-                var children = new Transform[_playerItemHolders[i].childCount];   
-                for (int j = 0; j < _playerItemHolders[i].childCount; j++)
-                    children[j] = _playerItemHolders[i].GetChild(j);
-
-                _playerItemParents[i] = children;
-            }
         }
 
         void OnPlayerRegistered(NetworkRunner runner, PlayerRef pRef)
         {
             var plObj = PlayerRegistry.GetPlayer(pRef);
             Debug.Log($"<color=orange>[Fusion]</color> Player Registered: {plObj?.Nickname}, Team: {plObj?.Team}, IndexByTeam: {plObj?.IndexByTeam}");
+            _readyButton.SetActive(PlayerObject.Local.Team != PlayerRegistry.TeamState.Spectator);
             UpdateText();
 
-            if(plObj.Team == PlayerRegistry.TeamState.None || plObj.Team == PlayerRegistry.TeamState.Spectator || plObj.IndexByTeam == 255)
+            if(plObj.Team == PlayerRegistry.TeamState.None || plObj.Team == PlayerRegistry.TeamState.Spectator)
                 return;
 
-            var teamitem = GetPlayerItem(pRef, plObj.Team, plObj.IndexByTeam);
-            teamitem.Init(pRef, plObj.Nickname);
+            var teamitem = GetPlayerItem(pRef, plObj.Index);
+            var color = PlayerRegistry.TeamColor[(int)plObj.Team];
+            teamitem.Init(pRef, plObj.Nickname, new Color(color.r, color.g, color.b, 0.6f));
             teamitem.SetReady(plObj.IsReady);
             plObj.OnReadyStateChanged += () => teamitem.SetReady(plObj.IsReady);
         }
@@ -81,15 +73,8 @@ namespace EyeMoT.Fusion
 
         void UpdateText()
         {
-            var spectatorCount = PlayerRegistry.CountWhere(t => t.Team == PlayerRegistry.TeamState.Spectator, true);
+            var spectatorCount = PlayerRegistry.CountSpectators;
             _spectatorCountText.text = spectatorCount.ToString();
-        }
-
-        public void OnTeamSelectButtonClicked(int teamIndex)
-        {
-            var team = (PlayerRegistry.TeamState)(byte)teamIndex;
-            PlayerObject.Local.Rpc_SetTeam(team);
-            _hidePanel.SetActive(team == PlayerRegistry.TeamState.Spectator);
         }
 
         public void OnReadyButtonClicked()
@@ -103,9 +88,9 @@ namespace EyeMoT.Fusion
             return item;
         }
 
-        PlayerItemUI GetPlayerItem(PlayerRef playerRef, PlayerRegistry.TeamState team, int index)
+        PlayerItemUI GetPlayerItem(PlayerRef playerRef, int index)
         {
-            return _playerItems.TryGetValue(playerRef, out var item) ? item : TrackItem(playerRef, Instantiate(_playerItemPrefab, _playerItemParents[(int)team][index]));
+            return _playerItems.TryGetValue(playerRef, out var item) ? item : TrackItem(playerRef, Instantiate(_playerItemPrefab, _playerItemHolders[index]));
         }
     }
 }

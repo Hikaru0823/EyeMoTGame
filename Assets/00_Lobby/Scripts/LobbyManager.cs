@@ -19,12 +19,20 @@ namespace EyeMoT.Fusion
         [SerializeField] private TMP_Text _lobbyStateText;
         [SerializeField] public SessionHolder SessionHolder;
         [SerializeField] private GameObject[] _modeStatuses; // 0 : Collabo, 1 : Mustch;
+        public SessionDef.Mode GetCurrentMode()
+        {
+            if (LobbyManager.Instance.Runner.SessionInfo.Properties.TryGetValue("Mode", out SessionProperty modeProperty) && modeProperty.IsInt)
+                return (SessionDef.Mode)(int)modeProperty;
+            else
+                return SessionDef.Mode.COLLABOLATION;
+        }
         public TabManager _networkTabManager;
         public TabManager _mainTabManager;
         public static event System.Action OnInitAll; //Host or Client　がセッションに入ったときに呼ばれるイベント
         public static event System.Action OnReleaseAll;
         public static event System.Action OnGameStart;
         public static event System.Action<NetworkRunner, PlayerRef, ReliableKey, ArraySegment<byte>> OnReliableDataReceivedEvent;
+        public static event System.Action<NetworkRunner, PlayerRef, ReliableKey, float> OnReliableDataProgressEvent;
 
         public new NetworkRunner Runner => _runnerLifecycleManager != null ? _runnerLifecycleManager.Runner : null;
 
@@ -206,9 +214,7 @@ namespace EyeMoT.Fusion
             {
                 Debug.Log("<color=orange>[Fusion]</color> Session Hosted!");
                 OnInitAll?.Invoke();
-                int modeIdx = 0;
-                if (LobbyManager.Instance.Runner.SessionInfo.Properties.TryGetValue("Mode", out SessionProperty modeProperty) && modeProperty.IsInt)
-                    modeIdx = modeProperty;
+                int modeIdx = (int)GetCurrentMode();
                 _modeStatuses[modeIdx].SetActive(true);
                 SessionDef.Name sessionDefName = SessionCodeUtility.ParseSessionName(sessionCode);
                 SessionHolder.TryGet(sessionDefName, out SessionData data);
@@ -261,9 +267,7 @@ namespace EyeMoT.Fusion
             {
                 Debug.Log("<color=orange>[Fusion]</color> Joined Session!");
                 OnInitAll?.Invoke();
-                int modeIdx = 0;
-                if (LobbyManager.Instance.Runner.SessionInfo.Properties.TryGetValue("Mode", out SessionProperty modeProperty) && modeProperty.IsInt)
-                    modeIdx = modeProperty;
+                int modeIdx = (int)GetCurrentMode();
                 _modeStatuses[modeIdx].SetActive(true);
                 SessionDef.Name sessionDefName = SessionCodeUtility.ParseSessionName(sessionCode);
                 SessionHolder.TryGet(sessionDefName, out SessionData data);
@@ -457,7 +461,9 @@ namespace EyeMoT.Fusion
         }
 
         public void OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey key, float progress)
-        { }
+        {
+            OnReliableDataProgressEvent?.Invoke(runner, player, key, progress);
+        }
 
         #endregion
     }

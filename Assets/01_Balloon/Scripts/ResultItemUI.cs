@@ -12,15 +12,19 @@ namespace EyeMoT.Balloon
         [SerializeField] private TMP_Text _playerNameText;
         [SerializeField] private TMP_Text _scoreText;
         [SerializeField] private Image _playerImage;
-        [SerializeField] private Image _topRankImage;
-        [SerializeField] private Sprite _defaultPlayerIcon;
+        [SerializeField] private Image _bgImage;
 
-        public void Init(string playerName, int score, int rank, Sprite playerIcon = null)
+        public void Init(string playerName, int score, Sprite playerIcon, Color bgColor)
         {
-            _playerImage.sprite = playerIcon ?? _defaultPlayerIcon;
+            _playerImage.sprite = playerIcon;
             _playerNameText.text = playerName;
             _scoreText.text = score.ToString();
-            _topRankImage.gameObject.SetActive(rank == 0);
+            _bgImage.color = bgColor;
+        }
+
+        public void UpdateScore(int newScore)
+        {
+            _scoreText.text = newScore.ToString();
         }
     }
 }

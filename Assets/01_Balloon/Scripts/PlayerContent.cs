@@ -49,7 +49,10 @@ namespace EyeMoT.Balloon
                 if (allReady)
                 {
                     _allReady = true;
-                    Instance.ObjectByRef.ForEach(kvp => kvp.Value.NetworkedReady = false);
+                    Instance.ObjectByRef.ForEach((kvp) =>  {
+                        kvp.Value.NetworkedReady = false;
+                        kvp.Value.NetwrokedBalloonCount = 0;
+                        });
                     Rpc_OnAllReady();
                 }
             }

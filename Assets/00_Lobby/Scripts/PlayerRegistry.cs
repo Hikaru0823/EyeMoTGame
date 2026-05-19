@@ -15,15 +15,28 @@ namespace EyeMoT.Fusion
         public enum TeamState
         {
             None = -1,
-            TeamA = 0,
-            TeamB = 1,
+            Red = 0,
+            Blue = 1,
+            Yellow = 2,
+            Green = 3,
             Spectator = 255
         }
+        public static Color[] TeamColor = new Color[4]
+        {
+            Color.red,
+            Color.blue,
+            Color.yellow,
+            Color.green,
+        };
+        public static string[] TeamColorNames = new string[]
+        {
+            "赤", "青", "緑", "黄"
+        };
         public const byte CAPACITY = 20;
         public static PlayerRegistry Instance { get; private set; }
         public static int CountAll => Instance.Object.IsValid ? Instance.ObjectByRef.Count : 0;
         public static int CountPlayers => Instance.Object.IsValid ? CountWhere(p => p.Team != TeamState.Spectator) : 0;
-        public static int CountSpectators => Instance.Object.IsValid ? CountWhere(p => p.Team == TeamState.Spectator) : 0;
+        public static int CountSpectators => Instance.Object.IsValid ? CountWhere(p => p.Team == TeamState.Spectator, true) : 0;
         public static event System.Action<NetworkRunner, PlayerRef> OnPlayerRegistered;
         public static event System.Action<NetworkRunner, PlayerRef> OnPlayerLeft;
 
@@ -55,11 +68,12 @@ namespace EyeMoT.Fusion
         {
             //if(!Runner.IsServer) return;
 
+
             if(!_allReady)
             {
                 if(CountAll != Runner.ActivePlayers.Count()) return;
 
-                var allReady = Players.Count() > 0 && Players.All(p => p.IsReady);
+                var allReady = Players.Count() > 1 && Players.All(p => p.IsReady);
                 if (allReady)
                 {
                     _allReady = true;
@@ -73,6 +87,41 @@ namespace EyeMoT.Fusion
             Instance = null;
             runner.RemoveCallbacks(this);
             OnPlayerRegistered = OnPlayerLeft = null;
+        }
+
+        public bool GetAvailable(out byte index)
+        {
+            if (ObjectByRef.Count() == 0)
+            {
+                index = 0;
+                return true;
+            }
+            else if (ObjectByRef.Count == CAPACITY)
+            {
+                index = default;
+                return false;
+            }
+
+            byte[] indices = ObjectByRef.Where(kvp => kvp.Value.IndexByTeam != 255).OrderBy(kvp => kvp.Value.Index).Select(kvp => kvp.Value.Index).ToArray();
+
+            if(indices.Length == 1 && indices[0] > 0 || indices.Length == 0)
+            {
+                index = 0;
+                return true;
+            }
+
+            for (int i = 0; i < indices.Length - 1; i++)
+            {
+                if (indices[i + 1] > indices[i] + 1)
+                {
+                    index = (byte)(indices[i] + 1);
+                    return true;
+                }
+            }
+
+
+            index = (byte)(indices[indices.Length - 1] + 1);
+            return true;
         }
         
         public bool GetAvailableOfTeam(PlayerRegistry.TeamState team, out byte index)
@@ -114,11 +163,18 @@ namespace EyeMoT.Fusion
         {
             Debug.Assert(runner.IsServer);
 
-            //if (Instance.GetAvailable(out byte index))
-            if(Instance.GetAvailableOfTeam(pObj.Team, out byte index))
+            if(pObj.Team == TeamState.Spectator)
             {
                 Instance.ObjectByRef.Add(pRef, pObj);
-                pObj.Server_Init(pRef, index);
+                pObj.Server_Init(pRef, 255, 255);
+                return;
+            }
+
+            //if (Instance.GetAvailable(out byte index))
+            if(Instance.GetAvailable(out byte index) && Instance.GetAvailableOfTeam(pObj.Team, out byte index_team))
+            {
+                Instance.ObjectByRef.Add(pRef, pObj);
+                pObj.Server_Init(pRef, index, index_team);
             }
             else
             {
