@@ -6,6 +6,5 @@ public class PlayerData : Singleton<PlayerData>
 {
     public string Nickname { get; set; } = "";
     public string CharacterName { get; set; } = "Character";
-    public bool UseImage { get; set; }
-    public byte[] ImageBytes { get; set; }
+    public Sprite PlayerImage { get; set; }
 }

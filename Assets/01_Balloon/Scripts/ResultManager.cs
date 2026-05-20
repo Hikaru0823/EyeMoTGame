@@ -170,7 +170,7 @@ namespace EyeMoT.Balloon
             }
 
             int playerIndex = PlayerObject.Local != null ? PlayerObject.Local.Index : 255;
-            ReliableKey reliableKey = ReliableKey.FromInts(1, playerIndex, Time.frameCount, 0);
+            ReliableKey reliableKey = ReliableKeys.GetHeatMapKey(playerIndex, false);
 
             runner.SendReliableDataToServer(reliableKey, pngBytes);
         }
@@ -220,7 +220,7 @@ namespace EyeMoT.Balloon
         private void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, ArraySegment<byte> data)
         {
             key.GetInts(out int dataType, out int playerIndex, out int frameCount, out int reserved);
-            if (dataType != 1)
+            if (dataType != ReliableKeys.HeatmapIndex)
             {
                 return;
             }
@@ -230,7 +230,7 @@ namespace EyeMoT.Balloon
 
             if (runner.IsServer && reserved == 0)
             {
-                key = ReliableKey.FromInts(1, playerIndex, frameCount, 1);
+                key = ReliableKeys.GetHeatMapKey(playerIndex, true);
                 BroadcastHeatmapBytesToClients(runner, key, heatmapPngBytes, player);
                 return;
             }
@@ -247,7 +247,7 @@ namespace EyeMoT.Balloon
         private void OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey key, float progress)
         {
             key.GetInts(out int dataType, out int playerIndex, out int frameCount, out int reserved);
-            if (dataType != 1)
+            if (dataType != ReliableKeys.HeatmapIndex)
             {
                 return;
             }

@@ -205,7 +205,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 651278215}
   m_Direction: 2
   m_Value: 1
-  m_Size: 0.97384614
+  m_Size: 0.97384626
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -3843,15 +3843,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
-    m_Left: 0
-    m_Right: 0
-    m_Top: 0
-    m_Bottom: 0
+    m_Left: 5
+    m_Right: 5
+    m_Top: 5
+    m_Bottom: 5
   m_ChildAlignment: 0
   m_StartCorner: 0
   m_StartAxis: 0
-  m_CellSize: {x: 150, y: 150}
-  m_Spacing: {x: 0, y: 0}
+  m_CellSize: {x: 195, y: 195}
+  m_Spacing: {x: 15, y: 15}
   m_Constraint: 0
   m_ConstraintCount: 2
 --- !u!1 &250376479
@@ -4613,7 +4613,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5624736215107011524, guid: 47a89fad0a57d174dafa1d720b553909, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_MethodName
-      value: OnButtonClicked
+      value: OnLoadButtonClicked
       objectReference: {fileID: 0}
     - target: {fileID: 5624736215107011524, guid: 47a89fad0a57d174dafa1d720b553909, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_TargetAssemblyTypeName
@@ -5153,7 +5153,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.5188679, g: 0.5188679, b: 0.5188679, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -7567,7 +7567,7 @@ GameObject:
   m_Component:
   - component: {fileID: 510749615}
   - component: {fileID: 510749617}
-  - component: {fileID: 510749616}
+  - component: {fileID: 510749618}
   m_Layer: 5
   m_Name: PreviewImage
   m_TagString: Untagged
@@ -7593,8 +7593,16 @@ RectTransform:
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0.5, y: 1}
---- !u!114 &510749616
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &510749617
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 510749614}
+  m_CullTransparentMesh: 1
+--- !u!114 &510749618
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -7603,7 +7611,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 510749614}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
@@ -7614,21 +7622,16 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Texture: {fileID: 8400000, guid: e657676b222bd8445b89ee3daf0c2852, type: 2}
-  m_UVRect:
-    serializedVersion: 2
-    x: 0
-    y: 0
-    width: 1
-    height: 1
---- !u!222 &510749617
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 510749614}
-  m_CullTransparentMesh: 1
+  m_Sprite: {fileID: 21300000, guid: 5b7504f8891bf48a9a000c2e978159fd, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 1
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 1
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1001 &517923344
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -12683,7 +12686,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1438849361751764583, guid: 4df95c43b40dd2a47abd79b9d22fd4d5, type: 3}
       propertyPath: m_Alpha
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4584127231451633561, guid: 4df95c43b40dd2a47abd79b9d22fd4d5, type: 3}
       propertyPath: m_Name
@@ -14927,11 +14930,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 392dcee235c25354cb1b3320336df82e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _userImageDirectory: /YOUR_RESOURCES/Images/
-  _maxImageSize: 512
   _imageContent: {fileID: 248268977}
-  _imagePrefab: {fileID: 253326466449600367, guid: 4dea93709c7c9a74b850676c9742616d, type: 3}
+  _imagePrefab: {fileID: 6448645468842769397, guid: b4dadeccd1e78496e81bf600322b4b86, type: 3}
   _loadingObject: {fileID: 1698182301}
+  _previewImages:
+  - {fileID: 828067438}
+  - {fileID: 510749618}
+  _previewText: {fileID: 1620490686}
+  _defaultImages:
+  - {fileID: 21300000, guid: cd043011d9e6f4f89b401c32b6cf06a9, type: 3}
+  - {fileID: 21300000, guid: 949b3fedd9b2b4faa830479debb0cc91, type: 3}
+  - {fileID: 21300000, guid: aca7f8df033db47829c8fe44459265ae, type: 3}
+  - {fileID: 21300000, guid: 0dc2076fb32974efa9d9de83cbbc92fc, type: 3}
+  - {fileID: 21300000, guid: f90c856fffce24840a8c10b70d1ac12e, type: 3}
+  _userImageDirectory: /YOUR_RESOURCES/Images/
+  _originalPrefix: EyeMoT_Module_0823
+  _maxImageSize: 512
   _loadOffset: 0.5
 --- !u!1 &974318941 stripped
 GameObject:
@@ -16934,14 +16948,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0}
+  m_Color: {r: 0.83137256, g: 0.83137256, b: 0.83137256, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+  m_Sprite: {fileID: 21300000, guid: 2fb2908ab004842cd905197e58065db3, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -18203,7 +18217,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 941429173}
   m_Direction: 2
   m_Value: 1
-  m_Size: 0.97384614
+  m_Size: 0.97384626
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -19598,7 +19612,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 2132535943}
   m_Direction: 0
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.99999994
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -20453,7 +20467,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 847602603}
   m_Direction: 2
   m_Value: 1
-  m_Size: 0.97384614
+  m_Size: 0.97384626
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -20579,7 +20593,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 246446600}
   m_Direction: 0
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.99999994
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -21945,7 +21959,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1400495102}
   m_Direction: 0
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.99999994
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -22777,7 +22791,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1438849361751764583, guid: 4df95c43b40dd2a47abd79b9d22fd4d5, type: 3}
       propertyPath: m_Alpha
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4584127231451633561, guid: 4df95c43b40dd2a47abd79b9d22fd4d5, type: 3}
       propertyPath: m_Name
@@ -25216,7 +25230,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1279383570}
   m_Direction: 0
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.99999994
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -25668,7 +25682,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1123454698}
   m_Direction: 2
   m_Value: 1
-  m_Size: 0.97384614
+  m_Size: 0.97384626
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -26992,7 +27006,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.6886792, g: 0.6886792, b: 0.6886792, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1

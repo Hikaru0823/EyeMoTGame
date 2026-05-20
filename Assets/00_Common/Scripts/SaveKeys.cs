@@ -6,6 +6,7 @@ public static class SaveKeys
     
     public const string PlayerName = "PlayerName";
     public const string SoundState = "SoundState";
+    public const string PlayerImagePath = "PlayerImagePath";
 
     #endregion
 }

@@ -1,8 +1,11 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Fusion;
+using Fusion.Sockets;
 using TMPro;
+using UnityEditorInternal.Profiling.Memory.Experimental;
 using UnityEngine;
 
 namespace EyeMoT.Fusion
@@ -25,6 +28,11 @@ namespace EyeMoT.Fusion
             PlayerRegistry.OnPlayerRegistered += OnPlayerRegistered;
             PlayerRegistry.OnPlayerLeft -= OnPlayerLeft;
             PlayerRegistry.OnPlayerLeft += OnPlayerLeft;
+            LobbyManager.OnReliableDataReceivedEvent -= OnReliableDataReceived;
+            LobbyManager.OnReliableDataReceivedEvent += OnReliableDataReceived;
+            LobbyManager.OnReliableDataProgressEvent -= OnReliableDataProgress;
+            LobbyManager.OnReliableDataProgressEvent += OnReliableDataProgress;
+
         }
 
         void Start()
@@ -82,6 +90,32 @@ namespace EyeMoT.Fusion
             PlayerObject.Local.Rpc_SetReadyState(!PlayerObject.Local.IsReady);
         }
 
+        private void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, ArraySegment<byte> data)
+        {
+            key.GetInts(out int dataType, out int playerIndex, out int frameCount, out int reserved);
+            if (dataType != ReliableKeys.ImageIndex)
+            {
+                return;
+            }
+
+            byte[] imagePngBytes = new byte[data.Count];
+            Buffer.BlockCopy(data.Array, data.Offset, imagePngBytes, 0, data.Count);
+            var texture = DecodeImageBytesToTexture(imagePngBytes);
+            var sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+            _playerItems[PlayerRegistry.First(p => p.Index == playerIndex).Ref].SetImage(sprite);
+
+            Debug.Log($"<color=orange>[Image]</color> Received image from {player} index {playerIndex}: {imagePngBytes.Length} bytes");
+        }
+
+        private void OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey key, float progress)
+        {
+            key.GetInts(out int dataType, out int playerIndex, out int frameCount, out int reserved);
+            if (dataType != ReliableKeys.ImageIndex)
+            {
+                return;
+            }
+        }
+
         PlayerItemUI TrackItem(PlayerRef playerRef, PlayerItemUI item)
         {
             _playerItems.Add(playerRef, item);
@@ -91,6 +125,23 @@ namespace EyeMoT.Fusion
         PlayerItemUI GetPlayerItem(PlayerRef playerRef, int index)
         {
             return _playerItems.TryGetValue(playerRef, out var item) ? item : TrackItem(playerRef, Instantiate(_playerItemPrefab, _playerItemHolders[index]));
+        }
+
+        private Texture2D DecodeImageBytesToTexture(byte[] imageBytes)
+        {
+            if (imageBytes == null || imageBytes.Length == 0)
+            {
+                return null;
+            }
+
+            Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            if (!texture.LoadImage(imageBytes))
+            {
+                Destroy(texture);
+                return null;
+            }
+
+            return texture;
         }
     }
 }

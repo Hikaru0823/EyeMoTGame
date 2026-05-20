@@ -9,18 +9,21 @@ public class PlayerItemUI : MonoBehaviour
 {
     [Header("Resources")]
     [SerializeField] private Image _background;
-    [SerializeField] private RawImage _image;
+    [SerializeField] private Image _image;
     [SerializeField] private TextMeshProUGUI _nicknameText;
     [SerializeField] private GameObject _readyIcon;
     [HideInInspector] public PlayerRef Ref;
     
-    public void Init(PlayerRef playerRef, string nickname, Color color, Texture2D characterIcon = null)
+    public void Init(PlayerRef playerRef, string nickname, Color color)
     {
         Ref = playerRef;
         _nicknameText.text = nickname;
         _background.color = color;
-        if(characterIcon != null)
-            _image.texture = characterIcon;
+    }
+
+    public void SetImage(Sprite sprite)
+    {
+        _image.sprite = sprite;
     }
 
     public void SetReady(bool isReady)

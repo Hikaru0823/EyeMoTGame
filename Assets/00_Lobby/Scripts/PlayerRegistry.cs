@@ -72,6 +72,7 @@ namespace EyeMoT.Fusion
             if(!_allReady)
             {
                 if(CountAll != Runner.ActivePlayers.Count()) return;
+                if(PlayerRegistry.Any(p => p.Team == TeamState.None)) return;
 
                 var allReady = Players.Count() > 1 && Players.All(p => p.IsReady);
                 if (allReady)
@@ -102,7 +103,7 @@ namespace EyeMoT.Fusion
                 return false;
             }
 
-            byte[] indices = ObjectByRef.Where(kvp => kvp.Value.IndexByTeam != 255).OrderBy(kvp => kvp.Value.Index).Select(kvp => kvp.Value.Index).ToArray();
+            byte[] indices = ObjectByRef.Where(kvp => kvp.Value.Team != TeamState.None).OrderBy(kvp => kvp.Value.Index).Select(kvp => kvp.Value.Index).ToArray();
 
             if(indices.Length == 1 && indices[0] > 0 || indices.Length == 0)
             {
@@ -137,7 +138,7 @@ namespace EyeMoT.Fusion
                 return false;
             }
 
-            byte[] indices = ObjectByRef.Where(kvp => kvp.Value.Team == team && kvp.Value.IndexByTeam != 255).OrderBy(kvp => kvp.Value.IndexByTeam).Select(kvp => kvp.Value.IndexByTeam).ToArray();
+            byte[] indices = ObjectByRef.Where(kvp => kvp.Value.Team == team && kvp.Value.Team != TeamState.None).OrderBy(kvp => kvp.Value.IndexByTeam).Select(kvp => kvp.Value.IndexByTeam).ToArray();
 
             if(indices.Length == 1 && indices[0] > 0 || indices.Length == 0)
             {
@@ -162,13 +163,6 @@ namespace EyeMoT.Fusion
         public static void Server_Add(NetworkRunner runner, PlayerRef pRef, PlayerObject pObj)
         {
             Debug.Assert(runner.IsServer);
-
-            if(pObj.Team == TeamState.Spectator)
-            {
-                Instance.ObjectByRef.Add(pRef, pObj);
-                pObj.Server_Init(pRef, 255, 255);
-                return;
-            }
 
             //if (Instance.GetAvailable(out byte index))
             if(Instance.GetAvailable(out byte index) && Instance.GetAvailableOfTeam(pObj.Team, out byte index_team))

@@ -6,6 +6,7 @@ using System.Collections;
 using Fusion.Sockets;
 using System.Collections.Generic;
 using TMPro;
+using System.Linq;
 
 namespace EyeMoT.Fusion
 {
@@ -28,7 +29,7 @@ namespace EyeMoT.Fusion
         }
         public TabManager _networkTabManager;
         public TabManager _mainTabManager;
-        public static event System.Action OnInitAll; //Host or Client　がセッションに入ったときに呼ばれるイベント
+        public static event System.Action OnInitAll; //Host or Client　がセッションに入ったときに呼ばれるイベント、シングルモードでは呼ばれない
         public static event System.Action OnReleaseAll;
         public static event System.Action OnGameStart;
         public static event System.Action<NetworkRunner, PlayerRef, ReliableKey, ArraySegment<byte>> OnReliableDataReceivedEvent;

@@ -13,11 +13,11 @@ namespace EyeMoT.Fusion
         public PlayerRef Ref { get; set; }
         [Networked]
         public PlayerController Controller { get; set; }
-        [Networked, OnChangedRender(nameof(OnTeamChanged))]
+        [Networked]
         public PlayerRegistry.TeamState Team { get; set; } = PlayerRegistry.TeamState.None;
         [Networked]
         public byte Index { get; set; } = 255;
-        [Networked]
+        [Networked, OnChangedRender(nameof(OnTeamChanged))]
         public byte IndexByTeam { get; set; } = 255;
 
         // User Settings
@@ -38,7 +38,7 @@ namespace EyeMoT.Fusion
             Debug.Assert(Runner.IsServer);
 
             Ref = pRef;
-            Index = index;
+            Index = Team == PlayerRegistry.TeamState.Spectator ? (byte)255 : index;
             IndexByTeam = index_team;
             //Index = index;
         }
@@ -101,13 +101,6 @@ namespace EyeMoT.Fusion
             PlayerRegistry.Server_Add(Runner, Object.InputAuthority, this);
         }
 
-        [Rpc(RpcSources.All, RpcTargets.InputAuthority)]
-        public void Rpc_SendImage()
-        {
-            ReliableKey reliableKey = ReliableKey.FromInts(0, Index, 0, 0);
-            Runner.SendReliableDataToServer(reliableKey, PlayerData.Instance.ImageBytes);
-        }
-
         void NameChanged()
         {
             OnNameChanged?.Invoke();
@@ -116,6 +109,11 @@ namespace EyeMoT.Fusion
         void OnTeamChanged()
         {
             PlayerRegistry.PlayerJoined(Object.InputAuthority);
+            if(Object.HasInputAuthority && Team != PlayerRegistry.TeamState.Spectator)
+            {
+                ReliableKey reliableKey = ReliableKeys.GetImageKey(Index, false);
+                //Runner.SendReliableDataToServer(reliableKey, PlayerData.Instance.PlayerImage.texture.EncodeToPNG());
+            }
         }
 
         void ReadyStateChanged()

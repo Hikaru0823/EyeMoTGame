@@ -74,7 +74,6 @@ namespace EyeMoT.GameRecoder
                 return;
             }
 
-            recordStateCanvas.enabled = true;
             string exeFolder = GetExeFolderPath();
 
             string recordFolder = Path.Combine(exeFolder, recorderFolderName + (string.IsNullOrEmpty(dirName) ? "" : $"/{dirName}"));
@@ -157,6 +156,7 @@ namespace EyeMoT.GameRecoder
 
                 isRecording = true;
                 Debug.Log($"<color=orange>[GameRecoder]</color> 録画開始 {outputPath}");
+                recordStateCanvas.enabled = true;
             }
             catch (Exception ex)
             {
