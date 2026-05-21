@@ -37,6 +37,18 @@ namespace EyeMoT.Balloon
         public int BalloonCount => _activeBalloons.Count;
         public Action OnBalloonDestroyed;
 
+        void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.D))
+            {
+                _visibleCollision = !_visibleCollision;
+                foreach(var balloon in _activeBalloons)
+                {
+                    balloon.VisibleCollision(_visibleCollision);
+                }
+            }
+        }
+
         public void SpawnInitialBalloons(GenerationPatern patern)
         {
             _maxBalloons = SettingManager.Instance.GameData.BalloonAmount;
@@ -201,7 +213,8 @@ namespace EyeMoT.Balloon
 
             foreach(var playerRef in sources)
             {
-                PlayerContent.GetPlayer(playerRef).NetwrokedBalloonCount++;
+                if(PlayerContent.GetPlayer(playerRef) != null)
+                    PlayerContent.GetPlayer(playerRef).NetwrokedBalloonCount++;
             }
 
             _activeBalloons.Remove(balloon);

@@ -112,6 +112,16 @@ namespace EyeMoT.Balloon
 
         public void ReturnTitle()
         {
+            if(LobbyManager.Instance.Runner.GameMode != GameMode.Single)
+            {
+                PopupUI.OnVisible("タイトルへ戻りますか？", "再度同じルームには入れませんが、よろしいですか？", PopupUI.Type.Alert, () =>
+                {
+                    _mainTabManager.OpenPanel("Title");
+                    LobbyManager.Instance.Quit();
+                }, true);
+                return;
+            }
+            _mainTabManager.OpenPanel("Title");
             LobbyManager.Instance.Quit();
         }
 

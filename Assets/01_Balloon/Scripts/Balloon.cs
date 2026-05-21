@@ -43,6 +43,7 @@ namespace EyeMoT.Balloon
         private float _defaultCollisionHight;
         #endregion
         private bool _hasDefaultValues;
+        public bool IsPreview = false;
 
         // ネットワーク上に生成されたときの初期化処理。
         public override void Spawned()

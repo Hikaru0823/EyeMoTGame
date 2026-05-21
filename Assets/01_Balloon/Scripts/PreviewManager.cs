@@ -29,6 +29,7 @@ namespace EyeMoT.Balloon
             var offset = Vector3.forward * 2.45f + Vector3.up * 0.3f;
             _previewBalloon = BalloonSpawnManager.Instance.SpawnPreviewBalloon(transform.position + offset, Vector3.zero);
             _previewBalloon.VisibleCollision(true);
+            _previewBalloon.IsPreview = true;
             foreach(Transform obj in _previewBalloon.transform)
             {
                 obj.gameObject.layer = _layerIdx;

@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 namespace EyeMoT
 {
-    public class PlayerImageManager : Singleton<PlayerImageManager>
+    public class PlayerImageManager : MonoBehaviour
     {
         [Header("Resources")]
         [SerializeField] private Transform _imageContent;

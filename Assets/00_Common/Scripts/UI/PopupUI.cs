@@ -37,9 +37,9 @@ public class PopupUI : Singleton<PopupUI>
         });
     }
 
-    public static void OnVisible(string title, string description, Type type, UnityEngine.Events.UnityAction onClose = null)
+    public static void OnVisible(string title, string description, Type type, UnityEngine.Events.UnityAction onClose = null, bool isNoButtonActive = false)
     {
-        Instance.noButton.gameObject.SetActive(false);
+        Instance.noButton.gameObject.SetActive(isNoButtonActive);
         Instance.title.text = title;
         Instance.description.text = description;
         Instance.icon.sprite = Instance._typeIcons[(int)type];

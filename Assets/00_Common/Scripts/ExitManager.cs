@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using EyeMoT.Fusion;
+using Fusion;
 using UnityEngine;
 
 namespace EyeMoT
@@ -32,6 +34,21 @@ namespace EyeMoT
 
         public void QuitApplication()
         {
+            if(LobbyManager.Instance.Runner.GameMode != GameMode.Single)
+            {
+                PopupUI.OnVisible("ゲームを終了しますか？", "再度同じルームには入れませんが、よろしいですか？", PopupUI.Type.Alert, () =>
+                {
+                    #if UNITY_EDITOR
+                    UnityEditor.EditorApplication.isPlaying = false;
+                    #elif UNITY_WEBGL
+                    
+                    #else            
+                    Application.Quit();
+                    #endif
+                }, true);
+                return;
+            }
+
             #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
             #elif UNITY_WEBGL
