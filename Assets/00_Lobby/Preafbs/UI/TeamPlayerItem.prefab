@@ -93,6 +93,8 @@ MonoBehaviour:
   _image: {fileID: 0}
   _nicknameText: {fileID: 3943898067885487489}
   _readyIcon: {fileID: 0}
+  _progressBar: {fileID: 0}
+  _progressBarImage: {fileID: 0}
 --- !u!1 &4221894834789943757
 GameObject:
   m_ObjectHideFlags: 0

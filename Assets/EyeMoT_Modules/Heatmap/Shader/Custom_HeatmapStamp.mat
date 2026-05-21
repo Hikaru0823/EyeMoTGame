@@ -29,10 +29,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Aspect: 1.7790263
+    - _Aspect: 1.7777778
     - _Decay: 0.995
     - _Intensity: 0.025
     - _Radius: 0.025
     m_Colors:
-    - _MouseUV: {r: 0.29263157, g: 0.8988764, b: 0, a: 0}
+    - _MouseUV: {r: 0.040913407, g: 0.92118615, b: 0, a: 0}
   m_BuildTextureStacks: []

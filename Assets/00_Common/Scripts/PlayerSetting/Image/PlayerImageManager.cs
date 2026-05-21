@@ -29,6 +29,7 @@ namespace EyeMoT
 
         private Animator _currentButtonAnimator;
         private string _currentSpriteName;
+        private bool _isLoading = false;
 
         string buttonPressed => StaticData.BUTTON_NORMAL_TO_PRESSED;
         string buttonNormal => StaticData.BUTTON_PRESSED_TO_NORMAL;
@@ -97,7 +98,8 @@ namespace EyeMoT
             var animator = button.GetComponent<Animator>();
             if(_currentButtonAnimator == animator)
                 return;
-            _currentButtonAnimator?.Play(buttonNormal);
+            if(_currentButtonAnimator != null)
+                _currentButtonAnimator.Play(buttonNormal);
             _currentButtonAnimator = animator;
             _currentSpriteName = button.name;
             ES3.Save<string>(SaveKeys.PlayerImagePath, path);
@@ -126,11 +128,17 @@ namespace EyeMoT
 
         public async void LoadUserImages()
         {
+            if(_isLoading)
+            {
+                Debug.LogWarning($"<color=orange>[ImageLoader]</color> Already loading images. Please wait.");
+                return;
+            }
             #if UNITY_WEBGL && !UNITY_EDITOR
             Debug.Log($"<color=orange>[ImageLoader]</color> WebGL platform does not support ImageLoader. Initialization skipped.");
             return;
             #endif
             string directoryPath = CurrentUserImageDirectory;
+            _isLoading = true;
             Debug.Log($"<color=orange>[ImageLoader]</color>Loading user images from: {directoryPath}");
 
             try
@@ -140,12 +148,13 @@ namespace EyeMoT
                 var imageInfos = await ImageDirectoryLoader.LoadResizedImagesAsync(directoryPath, _maxImageSize);
                 foreach (var imageInfo in imageInfos)
                 {
-                    Debug.Log($"<color=orange>[ImageLoader]</color>Loaded image: {imageInfo.FilePath}, Size: {imageInfo.Texture.width}x{imageInfo.Texture.height}");
                     // Here you can convert the byte array to a Texture2D and use it in your game
                     Texture2D texture = new Texture2D(imageInfo.Texture.width, imageInfo.Texture.height);
-                    texture.LoadImage(imageInfo.Texture.EncodeToPNG());
+                    var imageBytes = imageInfo.Texture.EncodeToPNG();
+                    texture.LoadImage(imageBytes);
                     var sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
                     CreateImageButton(imageInfo.FileName, sprite, imageInfo.FilePath);
+                    Debug.Log($"<color=orange>[ImageLoader]</color>Loaded image: {imageInfo.FilePath}, Size: {imageInfo.Texture.width}x{imageInfo.Texture.height}, Bytes: {imageBytes.Length}");
                 }
             }
             catch (Exception exception)
@@ -154,6 +163,7 @@ namespace EyeMoT
             }
             finally
             {
+                _isLoading = false;
                 _loadingObject.SetActive(false);
             }
         }

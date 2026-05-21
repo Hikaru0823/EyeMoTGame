@@ -110,7 +110,7 @@ namespace EyeMoT.Balloon
                 var teamResultItem = _teamResultItems[(int)plObj.Team];
 
                 teamScores[plObj.Team] += player.NetwrokedBalloonCount;
-                teamResultItem.AddPlayerResult(plObj.Nickname, player.NetwrokedBalloonCount);
+                teamResultItem.AddPlayerResult(plObj.Nickname, player.NetwrokedBalloonCount, plObj.PlayerImage);
             }
 
             var sortedTeamScores = teamScores.OrderByDescending(s => s.Value).ToArray();

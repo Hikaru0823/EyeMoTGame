@@ -29,6 +29,9 @@ namespace EyeMoT.Fusion
         [Networked, OnChangedRender(nameof(ReadyStateChanged))]
         public bool IsReady { get; set; }
 
+        //ローカルでそれぞれで設定するもの
+        public Sprite PlayerImage { get; set; }
+
 
         public event System.Action OnNameChanged;
         public event System.Action OnReadyStateChanged;
@@ -111,8 +114,23 @@ namespace EyeMoT.Fusion
             PlayerRegistry.PlayerJoined(Object.InputAuthority);
             if(Object.HasInputAuthority && Team != PlayerRegistry.TeamState.Spectator)
             {
+                PlayerImage = PlayerData.Instance.PlayerImage;
+                SessionUI.Instance.SetPlayerImage(Index, PlayerData.Instance.PlayerImage);
                 ReliableKey reliableKey = ReliableKeys.GetImageKey(Index, false);
-                //Runner.SendReliableDataToServer(reliableKey, PlayerData.Instance.PlayerImage.texture.EncodeToPNG());
+                Runner.SendReliableDataToServer(reliableKey, PlayerData.Instance.PlayerImage.texture.EncodeToPNG());
+            }
+
+            if(Object.HasStateAuthority)
+            {
+                foreach (PlayerObject playerObject in PlayerRegistry.Players)
+                {
+                    if (playerObject == null || !playerObject.Ref.IsRealPlayer || playerObject.Ref == Object.InputAuthority || playerObject.PlayerImage == null)
+                    {
+                        continue;
+                    }
+                    ReliableKey reliableKey = ReliableKeys.GetImageKey(playerObject.Index, true);
+                    Runner.SendReliableDataToPlayer(Object.InputAuthority, reliableKey, playerObject.PlayerImage.texture.EncodeToPNG());
+                }
             }
         }
 

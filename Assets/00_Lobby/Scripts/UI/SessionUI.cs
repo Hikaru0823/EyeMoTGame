@@ -5,7 +5,6 @@ using System.Linq;
 using Fusion;
 using Fusion.Sockets;
 using TMPro;
-using UnityEditorInternal.Profiling.Memory.Experimental;
 using UnityEngine;
 
 namespace EyeMoT.Fusion
@@ -54,7 +53,7 @@ namespace EyeMoT.Fusion
 
             var teamitem = GetPlayerItem(pRef, plObj.Index);
             var color = PlayerRegistry.TeamColor[(int)plObj.Team];
-            teamitem.Init(pRef, plObj.Nickname, new Color(color.r, color.g, color.b, 0.6f));
+            teamitem.Init(pRef, plObj.Nickname, new Color(color.r, color.g, color.b, 0.6f), true);
             teamitem.SetReady(plObj.IsReady);
             plObj.OnReadyStateChanged += () => teamitem.SetReady(plObj.IsReady);
         }
@@ -97,12 +96,19 @@ namespace EyeMoT.Fusion
             {
                 return;
             }
+            if (runner.IsServer && reserved == 0)
+            {
+                // Broadcast to other clients
+                key = ReliableKeys.GetImageKey(playerIndex, true);
+                BroadcastImageBytesToClients(runner, key, data.ToArray(), player);
+                return;
+            }
 
             byte[] imagePngBytes = new byte[data.Count];
             Buffer.BlockCopy(data.Array, data.Offset, imagePngBytes, 0, data.Count);
             var texture = DecodeImageBytesToTexture(imagePngBytes);
             var sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
-            _playerItems[PlayerRegistry.First(p => p.Index == playerIndex).Ref].SetImage(sprite);
+            SetPlayerImage(playerIndex, sprite);
 
             Debug.Log($"<color=orange>[Image]</color> Received image from {player} index {playerIndex}: {imagePngBytes.Length} bytes");
         }
@@ -110,10 +116,39 @@ namespace EyeMoT.Fusion
         private void OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey key, float progress)
         {
             key.GetInts(out int dataType, out int playerIndex, out int frameCount, out int reserved);
-            if (dataType != ReliableKeys.ImageIndex)
+            if (dataType != ReliableKeys.ImageIndex || reserved == 0)
             {
                 return;
             }
+
+            Debug.Log($"<color=orange>[Image]</color> Receiving image from {player} index {playerIndex}: {progress * 100f}%");
+
+            var targetRef = PlayerRegistry.First(p => p.Index == playerIndex).Ref;
+            if(!_playerItems.ContainsKey(targetRef))
+                return;
+            _playerItems[targetRef].SetProgress(progress);
+        }
+
+        private void BroadcastImageBytesToClients(NetworkRunner runner, ReliableKey key, byte[] imageBytes, PlayerRef excludePlayer = default)
+        {
+            foreach (var player in LobbyManager.Instance.Runner.ActivePlayers)
+            {
+                if (player == null || !player.IsRealPlayer || player == excludePlayer)
+                {
+                    continue;
+                }
+
+                runner.SendReliableDataToPlayer(player, key, imageBytes);
+            }
+        }
+
+        public void SetPlayerImage(int playerIndex, Sprite sprite)
+        {
+            var targetRef = PlayerRegistry.First(p => p.Index == playerIndex).Ref;
+            if(!_playerItems.ContainsKey(targetRef))
+                return;
+            PlayerRegistry.GetPlayer(targetRef).PlayerImage = sprite;
+            _playerItems[targetRef].SetImage(sprite);
         }
 
         PlayerItemUI TrackItem(PlayerRef playerRef, PlayerItemUI item)

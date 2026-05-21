@@ -205,7 +205,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 651278215}
   m_Direction: 2
   m_Value: 1
-  m_Size: 0.97384626
+  m_Size: 0.97384614
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -7592,7 +7592,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: -10, y: -10}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &510749617
 CanvasRenderer:
@@ -12452,7 +12452,7 @@ RectTransform:
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 1, y: 0.5}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &828067437
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -14945,7 +14945,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: f90c856fffce24840a8c10b70d1ac12e, type: 3}
   _userImageDirectory: /YOUR_RESOURCES/Images/
   _originalPrefix: EyeMoT_Module_0823
-  _maxImageSize: 512
+  _maxImageSize: 128
   _loadOffset: 0.5
 --- !u!1 &974318941 stripped
 GameObject:
@@ -18217,7 +18217,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 941429173}
   m_Direction: 2
   m_Value: 1
-  m_Size: 0.97384626
+  m_Size: 0.97384614
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -18692,8 +18692,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 130, y: 130}
+  m_AnchoredPosition: {x: -5, y: 0}
+  m_SizeDelta: {x: 120, y: 120}
   m_Pivot: {x: 1, y: 0.5}
 --- !u!114 &1208266138
 MonoBehaviour:
@@ -19612,7 +19612,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 2132535943}
   m_Direction: 0
   m_Value: 0
-  m_Size: 0.99999994
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -20467,7 +20467,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 847602603}
   m_Direction: 2
   m_Value: 1
-  m_Size: 0.97384626
+  m_Size: 0.97384614
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -20593,7 +20593,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 246446600}
   m_Direction: 0
   m_Value: 0
-  m_Size: 0.99999994
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -21959,7 +21959,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1400495102}
   m_Direction: 0
   m_Value: 0
-  m_Size: 0.99999994
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -25230,7 +25230,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1279383570}
   m_Direction: 0
   m_Value: 0
-  m_Size: 0.99999994
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -25682,7 +25682,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1123454698}
   m_Direction: 2
   m_Value: 1
-  m_Size: 0.97384626
+  m_Size: 0.97384614
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
