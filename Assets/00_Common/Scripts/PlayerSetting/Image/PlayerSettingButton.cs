@@ -1,4 +1,5 @@
 using KanKikuchi.AudioManager;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -9,6 +10,19 @@ namespace EyeMoT
     {
         [Header("Resources")]
         [SerializeField] private GameObject[] _highlitedObjects;
+        [SerializeField] private TMP_Text previewText;
+        [SerializeField] private Image _previewImage;
+
+        void Start()
+        {
+            Init();
+        }
+
+        void Init()
+        {
+            previewText.text = PlayerSettingManager.Instance?.CurrentName;
+            _previewImage.sprite = PlayerSettingManager.Instance?.CurrentPlayerImage;
+        }
 
         public void OnPointerEnter(PointerEventData eventData)
         {
@@ -32,6 +46,11 @@ namespace EyeMoT
             {
                 obj.SetActive(false);
             }
+        }
+
+        public void OpenPanel()
+        {
+            PlayerSettingManager.Instance?.Visible(() => Init());
         }
     }
 }

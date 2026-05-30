@@ -63,7 +63,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _imageDisplay: {fileID: 4981897180096462832}
-  Button: {fileID: 9126501847192296331}
+  _button: {fileID: 9126501847192296331}
   _buttonAnimator: {fileID: 5761818183197269222}
 --- !u!114 &9126501847192296331
 MonoBehaviour:

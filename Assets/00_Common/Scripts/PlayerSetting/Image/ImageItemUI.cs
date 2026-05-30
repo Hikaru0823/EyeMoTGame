@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,12 +11,23 @@ namespace EyeMoT
     {
         [Header("Resources")]
         [SerializeField] private Image _imageDisplay;
-        [SerializeField] public Button Button;
+        [SerializeField] private Button _button;
         [SerializeField] private Animator _buttonAnimator;
 
-        public void SetImage(Sprite sprite)
+        public string Name { get; private set; }
+        public Sprite Sprite => _imageDisplay.sprite;
+        public Animator ButtonAnimator => _buttonAnimator;
+
+        public void Init(string name, Sprite sprite, Color color, Action<ImageItemUI> onClick = null)
         {
+            _imageDisplay.color = color;
             _imageDisplay.sprite = sprite;
+            _imageDisplay.color = color;
+            Name = name;
+            if (onClick != null)
+            {
+                _button.onClick.AddListener(() => onClick.Invoke(this));
+            }
         }
 
         public void OnPointerEnter(PointerEventData eventData)

@@ -6,32 +6,23 @@ using UnityEngine.UI;
 using TMPro;
 using EyeMoT.Fusion;
 
-public class DisconnectUI : MonoBehaviour
+public class DisconnectUI : Singleton<DisconnectUI>
 {
-	public static DisconnectUI Instance { get; private set; }
-
 	[Header("Resources")]
 
-	[SerializeField] private Canvas _ui;
+	[SerializeField] private GameObject _panel;
+	[SerializeField] private GameObject _bgPanel;
 	[SerializeField] private TMP_Text _disconnectStatus;
 	[SerializeField] private TMP_Text _disconnectMessage;
 	[SerializeField] private Button _closeButton;
 
-	private void Awake()
-	{
-		if (Instance)
-		{
-			Destroy(gameObject);
-			return;
-		}
-		Instance = this;
-	}
 
 	void Start()
 	{
 		_closeButton.onClick.AddListener(() =>
 		{
-			Instance._ui.enabled = false;
+			Instance._panel.SetActive(false);
+			Instance._bgPanel.SetActive(false);
 			LobbyManager.Instance.Quit();
 		});
 	}
@@ -46,7 +37,8 @@ public class DisconnectUI : MonoBehaviour
 		Instance._disconnectStatus.text = status;
 		Instance._disconnectMessage.text = message;
 
-		Instance._ui.enabled = true;
+		Instance._panel.SetActive(true);
+		Instance._bgPanel.SetActive(true);
 		Cursor.lockState = CursorLockMode.None;
 	}
 
@@ -58,7 +50,8 @@ public class DisconnectUI : MonoBehaviour
 		Instance._disconnectStatus.text = status;
 		Instance._disconnectMessage.text = message;
 
-		Instance._ui.enabled = true;
+		Instance._panel.SetActive(true);
+		Instance._bgPanel.SetActive(true);
 		Cursor.lockState = CursorLockMode.None;
 	}
 
@@ -68,7 +61,8 @@ public class DisconnectUI : MonoBehaviour
 		Instance._disconnectStatus.text = status;
 		Instance._disconnectMessage.text = message;
 
-		Instance._ui.enabled = true;
+		Instance._panel.SetActive(true);
+		Instance._bgPanel.SetActive(true);
 		Cursor.lockState = CursorLockMode.None;
 	}
 

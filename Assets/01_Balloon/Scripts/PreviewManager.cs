@@ -28,7 +28,7 @@ namespace EyeMoT.Balloon
         {
             var offset = Vector3.forward * 2.45f + Vector3.up * 0.3f;
             _previewBalloon = BalloonSpawnManager.Instance.SpawnPreviewBalloon(transform.position + offset, Vector3.zero);
-            _previewBalloon.VisibleCollision(true);
+            _previewBalloon.VisibleCollision(_items[_newItemIndex].VisibleCollison);
             _previewBalloon.IsPreview = true;
             foreach(Transform obj in _previewBalloon.transform)
             {
@@ -54,6 +54,7 @@ namespace EyeMoT.Balloon
             if(_previewBalloon != null)
                 _previewBalloon.SetEffectEnable(false);
             ResetBalloon();
+            _previewBalloon.VisibleCollision(_items[_newItemIndex].VisibleCollison);
             if(newItem == "Interaction")
             {
                 _balloonDestroy = StartCoroutine(BalloonDestroyRoutine(0.5f));
@@ -121,7 +122,7 @@ namespace EyeMoT.Balloon
 
         public enum BGColor
         {
-            Default, White, Black
+            Default, Black, White
         }
 
         [System.Serializable]
@@ -130,6 +131,7 @@ namespace EyeMoT.Balloon
             public string ItemName;
             [TextArea(3, 10)]public string Description;
             public bool ActivePreviewCamera;
+            public bool VisibleCollison = true;
         } 
     }
 }

@@ -7,6 +7,7 @@ public static class BGMPath{
 
 	public const string BALLOON_GAME  = "BGM/Balloon_Game";
 	public const string BALLOON_TITLE = "BGM/Balloon_Title";
+	public const string TITLE         = "BGM/Title";
 
 }
 

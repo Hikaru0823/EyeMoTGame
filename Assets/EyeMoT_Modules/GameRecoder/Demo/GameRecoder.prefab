@@ -150,9 +150,9 @@ MonoBehaviour:
   recorderFolderName: YOUR_RECORD/GameRecord
   ffmpegFolderName: GameRecorder/ffmpeg.exe
   outputPrefix: GameRecoder_
-  receiveDebugLog: 1
+  receiveDebugLog: 0
   recordStateCanvas: {fileID: 6418572435638102867}
-  canRecord: 0
+  canRecord: 1
 --- !u!1 &6875677846030676445
 GameObject:
   m_ObjectHideFlags: 0

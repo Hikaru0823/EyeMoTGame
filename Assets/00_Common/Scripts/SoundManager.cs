@@ -21,7 +21,7 @@ namespace EyeMoT
 
         void Update()
         {
-            if(Input.GetKeyDown(KeyCode.B))
+            if(Input.GetKeyDown(KeyCode.B) && PlayerData.Instance.CanUseShortCut)
             {
                 OnClicked();
             }

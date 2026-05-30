@@ -39,7 +39,7 @@ namespace EyeMoT.Balloon
 
         void Update()
         {
-            if (Input.GetKeyDown(KeyCode.D))
+            if (Input.GetKeyDown(KeyCode.D) && PlayerData.Instance.CanUseShortCut)
             {
                 _visibleCollision = !_visibleCollision;
                 foreach(var balloon in _activeBalloons)

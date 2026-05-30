@@ -5,6 +5,7 @@ using Fusion;
 using Fusion.Addons.Physics;
 using KanKikuchi.AudioManager;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace EyeMoT.Balloon
 {
@@ -14,6 +15,9 @@ namespace EyeMoT.Balloon
         [SerializeField] private GameObject _balloonVisual;
         [SerializeField] private NetworkRigidbody3D _networkRigidbody;
         [SerializeField] private MeshRenderer _collisionVisual;
+        [SerializeField] private Material _defaultMaterial;
+        [SerializeField] private Material _imageMaterial;
+        [SerializeField] private Image _balloonImage;
 
         [Header("Settings")]
         [SerializeField] private float _lifeTime = 3.0f;
@@ -155,6 +159,17 @@ namespace EyeMoT.Balloon
         // 設定値に合わせて見た目と当たり判定のサイズを更新する。
         public void UpdateData()
         {
+            var isDefault = SettingManager.Instance.BalloonData.TargetShapeIdx == 0;
+            if(isDefault)
+            {
+                _balloonVisual.GetComponent<Renderer>().material = _defaultMaterial;
+                _balloonVisual.GetComponent<Renderer>().material.color = Color.red;
+            }
+            else
+            {
+                _balloonVisual.GetComponent<Renderer>().material = _imageMaterial;
+                _balloonImage.sprite = BalloonImageEditor.Instance.CurrentSprite;
+            }
             _balloonVisual.transform.localScale = _defaultVisualScale * SettingManager.Instance.BalloonData.VisualScale;
 
             _collisionVisual.transform.localScale = _defaultCollisionScale * SettingManager.Instance.BalloonData.CollisionScale;

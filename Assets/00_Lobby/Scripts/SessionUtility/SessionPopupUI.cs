@@ -7,7 +7,7 @@ using TMPro;
 
 namespace EyeMoT.Fusion
 {
-    public class SessionPopupUI : Singleton<SessionPopupUI>
+    public class SessionPopupUI : SceneSingleton<SessionPopupUI>
     {
         [Header("Resources")]
         [SerializeField] private Canvas ui;

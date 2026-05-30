@@ -29,6 +29,10 @@ namespace EyeMoT.Balloon
 
         void Start()
         {
+            #if !UNITY_WEBGL && !UNITY_EDITOR
+            Screen.SetResolution(Screen.currentResolution.width, Screen.currentResolution.height, FullScreenMode.FullScreenWindow);
+            #endif
+
             LobbyManager.OnReleaseAll -= GameExit;
             LobbyManager.OnReleaseAll += GameExit;
             Timer.OnTimeUpdated -= UpdateGameTime;
@@ -43,6 +47,23 @@ namespace EyeMoT.Balloon
             LobbyManager.Instance.TrySingleSession(Init);
         }
 
+        void Update()
+        {
+            if(Input.GetKeyDown(KeyCode.T) && PlayerData.Instance.CanUseShortCut)
+            {
+                ReturnTitle(LobbyManager.Instance.Runner.GameMode != GameMode.Single);
+            }
+
+            if(Input.GetKeyDown(KeyCode.R) && PlayerData.Instance.CanUseShortCut)
+            {
+                if(LobbyManager.Instance.Runner.GameMode != GameMode.Single) return;
+                #if !UNITY_WEBGL || UNITY_EDITOR
+                EyeMoT.GameRecoder.GameRecoder.Instance.RecordEnd();
+                #endif
+                GameStart();
+            }
+        }
+
         void Init()
         {
             _mainTabManager.OpenPanel("Title");
@@ -52,11 +73,12 @@ namespace EyeMoT.Balloon
 
         public void GameStart()
         {
+            CursorManager.Instance.SetCursorVisible(false);
             _mainTabManager.OpenPanel("Game");
             #if !UNITY_WEBGL || UNITY_EDITOR
             EyeMoT.GameRecoder.GameRecoder.Instance.RecordStart();
             #endif
-            BGMManager.Instance.Play(BGMPath.BALLOON_GAME, volumeRate: 0.5f);
+            BGMManager.Instance.Play(BalloonBGMEditor.Instance.CurrentBGM, volumeRate: 0.5f);
 
             var players = PlayerRegistry.Players
                     .Where(kvp => kvp.Team != PlayerRegistry.TeamState.Spectator && kvp.Team != PlayerRegistry.TeamState.None)
@@ -110,9 +132,10 @@ namespace EyeMoT.Balloon
             _mainTabManager.OpenPanel("Game");
         }
 
-        public void ReturnTitle()
+        // UI hook
+        public void ReturnTitle(bool isConfirm = false)
         {
-            if(LobbyManager.Instance.Runner.GameMode != GameMode.Single)
+            if(isConfirm && LobbyManager.Instance.Runner.GameMode != GameMode.Single)
             {
                 PopupUI.OnVisible("タイトルへ戻りますか？", "再度同じルームには入れませんが、よろしいですか？", PopupUI.Type.Alert, () =>
                 {
@@ -132,6 +155,7 @@ namespace EyeMoT.Balloon
             #if !UNITY_WEBGL || UNITY_EDITOR
             EyeMoT.GameRecoder.GameRecoder.Instance.RecordEnd();
             #endif
+            CursorManager.Instance.SetCursorVisible(true);
             BGMManager.Instance.Play(BGMPath.BALLOON_TITLE, volumeRate: 0.5f);
             _isStart = false;
             BalloonSpawnManager.Instance.ResetBalloons();

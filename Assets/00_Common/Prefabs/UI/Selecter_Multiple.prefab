@@ -787,10 +787,10 @@ RectTransform:
   - {fileID: 1015764547904176520}
   m_Father: {fileID: 1148377355051361409}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 135, y: -137.5}
-  m_SizeDelta: {x: 265, y: 75.6}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1134787926068127967
 CanvasRenderer:
@@ -874,6 +874,7 @@ MonoBehaviour:
   gazeTime: 1.5
   isSelectable: 0
   isContinueClickable: 1
+  Enable: 1
 --- !u!1 &3787618036077451437
 GameObject:
   m_ObjectHideFlags: 0
@@ -1239,10 +1240,10 @@ RectTransform:
   - {fileID: 7660278262351961401}
   m_Father: {fileID: 1148377355051361409}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 410, y: -137.5}
-  m_SizeDelta: {x: 265, y: 75.6}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8564255176995910349
 CanvasRenderer:
@@ -1326,6 +1327,7 @@ MonoBehaviour:
   gazeTime: 1.5
   isSelectable: 0
   isContinueClickable: 1
+  Enable: 1
 --- !u!1 &5462384368903500017
 GameObject:
   m_ObjectHideFlags: 0
@@ -1496,10 +1498,10 @@ RectTransform:
   - {fileID: 3043152336656588243}
   m_Father: {fileID: 1148377355051361409}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 135, y: -223.1}
-  m_SizeDelta: {x: 265, y: 75.6}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7985775331934478923
 CanvasRenderer:
@@ -1583,6 +1585,7 @@ MonoBehaviour:
   gazeTime: 1.5
   isSelectable: 0
   isContinueClickable: 1
+  Enable: 1
 --- !u!1 &5934048119493247133
 GameObject:
   m_ObjectHideFlags: 0
@@ -1918,6 +1921,7 @@ MonoBehaviour:
   _highlightColor: {r: 0, g: 1, b: 0, a: 1}
   _disabledColor: {r: 0.8784314, g: 0.8784314, b: 0.8784314, a: 1}
   _defaultIdx: 0
+  _useSaveData: 0
 --- !u!114 &2629952271325318090
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2278,10 +2282,10 @@ RectTransform:
   - {fileID: 8698826522373650001}
   m_Father: {fileID: 1148377355051361409}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 135, y: -51.900005}
-  m_SizeDelta: {x: 265, y: 75.6}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7316391607861058869
 CanvasRenderer:
@@ -2365,6 +2369,7 @@ MonoBehaviour:
   gazeTime: 1.5
   isSelectable: 0
   isContinueClickable: 1
+  Enable: 1
 --- !u!1 &7346982996273999181
 GameObject:
   m_ObjectHideFlags: 0
@@ -2401,10 +2406,10 @@ RectTransform:
   - {fileID: 1228886031910920414}
   m_Father: {fileID: 1148377355051361409}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 410, y: -51.900005}
-  m_SizeDelta: {x: 265, y: 75.6}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6902104040369989887
 CanvasRenderer:
@@ -2488,6 +2493,7 @@ MonoBehaviour:
   gazeTime: 1.5
   isSelectable: 0
   isContinueClickable: 1
+  Enable: 1
 --- !u!1 &7760873755615082643
 GameObject:
   m_ObjectHideFlags: 0
@@ -2690,10 +2696,10 @@ RectTransform:
   - {fileID: 2867957007232622088}
   m_Father: {fileID: 1148377355051361409}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 410, y: -223.1}
-  m_SizeDelta: {x: 265, y: 75.6}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7914149092229519721
 CanvasRenderer:
@@ -2777,6 +2783,7 @@ MonoBehaviour:
   gazeTime: 1.5
   isSelectable: 0
   isContinueClickable: 1
+  Enable: 1
 --- !u!1 &8710989816709700954
 GameObject:
   m_ObjectHideFlags: 0

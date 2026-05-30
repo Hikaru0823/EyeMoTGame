@@ -7,7 +7,7 @@ using UnityEngine.Events;
 
 namespace EyeMoT
 {
-    public class NameEditor : Singleton<NameEditor>
+    public class NameEditor : MonoBehaviour
     {
         public enum ConvertType
         {
@@ -25,7 +25,6 @@ namespace EyeMoT
         [SerializeField] private TMP_InputField _inputField;
         [SerializeField] private TMP_Text _characterCountText;
         [SerializeField] private Transform _mainKeyButtonsParent;
-        [SerializeField] private TMP_Text _previewText;
 
         [Header("Settings")]
         [SerializeField] private int _characterLimit = 12;
@@ -33,7 +32,9 @@ namespace EyeMoT
 
         private MainKeyButton[] _mainKeyButtons;
 
-        override protected void OnAwake()
+        public string CurrentName => _inputField.text;
+
+        void Awake()
         {
             _characterCountRectTransform = _characterCountText.GetComponent<RectTransform>();
             _characterCountDefaultPosition = _characterCountRectTransform.anchoredPosition;
@@ -75,17 +76,12 @@ namespace EyeMoT
         }
 
 
-        public TabManager tabmanager; //ここはシーンに依存するから、変更必須。変えろよ未来の俺
         //UIhook
         public void OnReturnButtonClick()
         {
             if(string.IsNullOrWhiteSpace(_inputField.text))
             {
                 PopupUI.OnVisible("名前が空です", "名前を入力してください", PopupUI.Type.Alert);
-            }
-            else
-            {
-                tabmanager.OpenPanel("Title");
             }
         } 
 
@@ -130,7 +126,6 @@ namespace EyeMoT
 
             PlayerData.Instance.Nickname = _inputField.text;
             OnNameChanged?.Invoke(_inputField.text);
-            _previewText.text = _inputField.text;
             _characterCountText.text = $"{_inputField.text.Length}/{_characterLimit}";
             ES3.Save<string>(SaveKeys.PlayerName, _inputField.text);
         }

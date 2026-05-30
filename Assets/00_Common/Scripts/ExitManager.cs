@@ -32,6 +32,14 @@ namespace EyeMoT
             #endif
         }
 
+        void Update()
+        {
+            if(Input.GetKeyDown(KeyCode.Escape))
+            {
+                QuitApplication();
+            }
+        }
+
         public void QuitApplication()
         {
             if(LobbyManager.Instance.Runner.GameMode != GameMode.Single)

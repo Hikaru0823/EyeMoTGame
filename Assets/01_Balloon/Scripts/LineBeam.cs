@@ -107,14 +107,17 @@ namespace EyeMoT.Balloon
             var teamColor = PlayerRegistry.TeamColor[(int)PlayerRegistry.GetPlayer(Object.InputAuthority).Team];
             _targetImage.GetComponent<SpriteRenderer>().color = Object.HasInputAuthority ? teamColor : new Color(teamColor.r, teamColor.g, teamColor.b, _noLocalAlpha);
             _visualRenderer.material.color = teamColor;
+            _lineRenderer.material.color = new Color(teamColor.r + 0.5f, teamColor.g + 0.5f, teamColor.b + 0.5f, 1f);
             var plobj = PlayerRegistry.GetPlayer(Object.InputAuthority);
-            _resultItem.Init(plobj.Nickname, 0, plobj.PlayerImage, new Color(teamColor.r, teamColor.g, teamColor.b, 0.2f));
 
             if(LobbyManager.Instance.Runner.GameMode == GameMode.Single)
             {    
+                plobj.PlayerImage = PlayerSettingManager.Instance.CurrentPlayerImage;
                 _targetImage.GetComponent<SpriteRenderer>().color = Object.HasInputAuthority ? Color.yellow : new Color(1f, 1f, 0, _noLocalAlpha);
                 _visualRenderer.material.color = Color.black;
             }
+
+            _resultItem.Init(plobj.Nickname, 0, plobj.PlayerImage, new Color(teamColor.r, teamColor.g, teamColor.b, 0.2f));
 
             _componentsInitialized = true;
         }

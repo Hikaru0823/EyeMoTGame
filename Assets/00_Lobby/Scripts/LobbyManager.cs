@@ -38,6 +38,7 @@ namespace EyeMoT.Fusion
         public new NetworkRunner Runner => _runnerLifecycleManager != null ? _runnerLifecycleManager.Runner : null;
 
         bool _isTransitioning;
+        Coroutine _quitRoutine;
 
         async void Awake()
         {
@@ -127,7 +128,7 @@ namespace EyeMoT.Fusion
 
             Debug.Log("<color=orange>[Fusion]</color> Joining Lobby...");
             _isTransitioning = true;
-            Loading.Instance.SetVisible(true);
+            Loading.Instance.SetVisible(true, Quit);
 
             yield return _runnerLifecycleManager.ShutdownRunnerRoutine();
             NetworkRunner runner = _runnerLifecycleManager.CreateRunner(this);
@@ -194,7 +195,7 @@ namespace EyeMoT.Fusion
                 { "Mode", (int)mode },
             };
 
-            Loading.Instance.SetVisible(true);
+            Loading.Instance.SetVisible(true, Quit);
             Task<StartGameResult> task = runner.StartGame(new StartGameArgs()
             {
                 GameMode = GameMode.Host,
@@ -248,7 +249,7 @@ namespace EyeMoT.Fusion
             yield return _runnerLifecycleManager.ShutdownRunnerRoutine();
             NetworkRunner runner = _runnerLifecycleManager.CreateRunner(this);
 
-            Loading.Instance.SetVisible(true);
+            Loading.Instance.SetVisible(true, Quit);
             Task<StartGameResult> task = runner.StartGame(new StartGameArgs()
             {
                 GameMode = GameMode.Client,
@@ -309,8 +310,13 @@ namespace EyeMoT.Fusion
             }
         }
 
+        
         public void Quit()
         {
+            if(_quitRoutine != null)
+            {
+                StopCoroutine(_quitRoutine);
+            }
             StartCoroutine(QuitRoutine());
         }
 
@@ -318,7 +324,7 @@ namespace EyeMoT.Fusion
         {
             Debug.Log("<color=orange>[Fusion]</color> Quitting ...");
 
-            Loading.Instance.SetVisible(true);
+            Loading.Instance.SetVisible(true, Quit);
 
             switch (_mainTabManager.GetCurrentPanelName())
             {

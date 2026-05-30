@@ -19,7 +19,7 @@ namespace EyeMoT
 
         public void OnClick()
         {
-            NameEditor.Instance.SetMainKey(_text.text);
+            PlayerSettingManager.Instance.NameEditor.SetMainKey(_text.text);
         }
 
         public void ConvertText(NameEditor.ConvertType convertType)

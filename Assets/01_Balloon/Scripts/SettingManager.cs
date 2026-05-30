@@ -30,6 +30,7 @@ namespace EyeMoT.Balloon
                 _balloonDataSelecter.CollisionScale.Initialize(Array.FindIndex(_balloonDataSelecter.CollisionScale.GetItems(), x => x.Contains(BalloonData.CollisionScale.ToString("F1") + " 倍")) );
                 _balloonDataSelecter.VisualScale.Initialize(Array.FindIndex(_balloonDataSelecter.VisualScale.GetItems(), x => x.Contains(BalloonData.VisualScale.ToString("F1") + " 倍")) );
                 _balloonDataSelecter.LifeTime.Initialize(Array.FindIndex(_balloonDataSelecter.LifeTime.GetItems(), x => x.Contains(BalloonData.LifeTime.ToString("F1") + " 秒")) );
+                _balloonDataSelecter.TargetShape.Initialize(BalloonData.TargetShapeIdx);
                 _balloonDataSelecter.VFXIdx.Initialize(BalloonData.VFXIdx);
             }
             else
@@ -42,6 +43,7 @@ namespace EyeMoT.Balloon
                 _balloonDataSelecter.CollisionScale.Initialize(-1);
                 _balloonDataSelecter.VisualScale.Initialize(-1);
                 _balloonDataSelecter.LifeTime.Initialize(-1);
+                _balloonDataSelecter.TargetShape.Initialize(-1);
                 _balloonDataSelecter.VFXIdx.Initialize(-1);
             }
         }
@@ -106,6 +108,7 @@ namespace EyeMoT.Balloon
         public void SetCollisionScale(string value) => BalloonData.CollisionScale = float.Parse(value.Replace("倍", ""));
         public void SetVisualScale(string value) => BalloonData.VisualScale = float.Parse(value.Replace("倍", ""));
         public void SetLifeTime(string value) => BalloonData.LifeTime = float.Parse(value.Replace("秒", ""));
+        public void SetTargetShape(int idx) => BalloonData.TargetShapeIdx = idx;
         public void SetVFXType(int idx) => BalloonData.VFXIdx = idx;
         #endregion
     }
@@ -136,6 +139,7 @@ namespace EyeMoT.Balloon
 
         public float VisualScale;
         public float LifeTime;
+        public int TargetShapeIdx;
         public int VFXIdx;
     }
 
@@ -145,6 +149,7 @@ namespace EyeMoT.Balloon
         public SelecterUI CollisionScale;
         public SelecterUI VisualScale;
         public SelecterUI LifeTime;
+        public SelecterUI TargetShape;
         public SelecterUI VFXIdx;
     }
 

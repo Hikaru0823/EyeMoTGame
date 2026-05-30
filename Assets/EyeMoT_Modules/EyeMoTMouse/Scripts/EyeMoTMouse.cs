@@ -92,7 +92,7 @@ namespace EyeMoT
         {
             if (this.keyboard != null)
             {
-                if (this.keyboard.xKey.wasReleasedThisFrame)
+                if (this.keyboard.xKey.wasReleasedThisFrame && PlayerData.Instance.CanUseShortCut)
                     this.OnStatusChanged(this.isTrackable);
             }
         }
