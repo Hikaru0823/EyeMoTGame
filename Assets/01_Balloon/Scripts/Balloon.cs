@@ -150,6 +150,15 @@ namespace EyeMoT.Balloon
             Rpc_SetHitSourceState(source, false);
         }
 
+        public void OnPlayerButtonPushed()
+        {
+            if (!Object || !Object.IsValid)
+                return;
+            
+
+            Rpc_DestroyBalloon();
+        }
+
         // 削除時の破壊エフェクト再生を切り替える。
         public void SetEffectEnable(bool enable)
         {
@@ -230,9 +239,11 @@ namespace EyeMoT.Balloon
             if (!isHit)
                 _hitSources.Clear();
 
-            IsHit = isHit;
             _effectEnable = isHit;
+            if(SettingManager.Instance.GameData.IsSwitchMode == 0)
+                return;
 
+            IsHit = isHit;
             if (!isHit)
             {    
                 ResetMissStateIfNeeded();
@@ -277,6 +288,13 @@ namespace EyeMoT.Balloon
         private void Rpc_SetLifeTime(float lifeTime)
         {
             NetworkedLifeTime = lifeTime;
+        }
+
+        [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+        private void Rpc_DestroyBalloon()
+        {
+            _effectEnable = true;
+            BalloonSpawnManager.Instance.DestroyBalloon(this, _hitSources);
         }
 
         [Rpc(RpcSources.All, RpcTargets.StateAuthority)]

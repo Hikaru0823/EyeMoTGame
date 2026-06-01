@@ -76,7 +76,8 @@ namespace EyeMoT.Balloon
             CursorManager.Instance.SetCursorVisible(false);
             _mainTabManager.OpenPanel("Game");
             #if !UNITY_WEBGL || UNITY_EDITOR
-            EyeMoT.GameRecoder.GameRecoder.Instance.RecordStart();
+            if(SettingManager.Instance.GameData.ActiveRecord == 0)
+                EyeMoT.GameRecoder.GameRecoder.Instance.RecordStart();
             #endif
             BGMManager.Instance.Play(BalloonBGMEditor.Instance.CurrentBGM, volumeRate: 0.5f);
 
@@ -118,7 +119,7 @@ namespace EyeMoT.Balloon
         public void GameEnd()
         {
             _mainTabManager.OpenPanel("Result");
-        
+            CursorManager.Instance.SetCursorVisible(true);
             #if !UNITY_WEBGL || UNITY_EDITOR
             EyeMoT.GameRecoder.GameRecoder.Instance.RecordEnd();
             #endif
@@ -142,10 +143,15 @@ namespace EyeMoT.Balloon
                     _mainTabManager.OpenPanel("Title");
                     LobbyManager.Instance.Quit();
                 }, true);
-                return;
             }
-            _mainTabManager.OpenPanel("Title");
-            LobbyManager.Instance.Quit();
+            else
+            {
+                PopupUI.OnVisible("タイトルへ戻りますか？", "", PopupUI.Type.Alert, () =>
+                {
+                    _mainTabManager.OpenPanel("Title");
+                    LobbyManager.Instance.Quit();
+                }, true);
+            }
         }
 
         public void GameExit()

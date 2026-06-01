@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using EyeMoT.Fusion;
+using EyeMoT;
 
 public class DisconnectUI : Singleton<DisconnectUI>
 {
@@ -39,7 +40,7 @@ public class DisconnectUI : Singleton<DisconnectUI>
 
 		Instance._panel.SetActive(true);
 		Instance._bgPanel.SetActive(true);
-		Cursor.lockState = CursorLockMode.None;
+		CursorManager.Instance.SetCursorVisible(true);
 	}
 
 	public static void OnConnectFailed(NetConnectFailedReason reason)
@@ -52,7 +53,7 @@ public class DisconnectUI : Singleton<DisconnectUI>
 
 		Instance._panel.SetActive(true);
 		Instance._bgPanel.SetActive(true);
-		Cursor.lockState = CursorLockMode.None;
+		CursorManager.Instance.SetCursorVisible(true);
 	}
 
 	public static void OnDisconnectedFromServer(NetDisconnectReason reason)
@@ -63,7 +64,7 @@ public class DisconnectUI : Singleton<DisconnectUI>
 
 		Instance._panel.SetActive(true);
 		Instance._bgPanel.SetActive(true);
-		Cursor.lockState = CursorLockMode.None;
+		CursorManager.Instance.SetCursorVisible(true);
 	}
 
 	private static (string, string) ShutdownReasonToHuman(ShutdownReason reason)

@@ -42,7 +42,7 @@ namespace EyeMoT
 
         public void QuitApplication()
         {
-            if(LobbyManager.Instance.Runner.GameMode != GameMode.Single)
+            if(LobbyManager.Instance.Runner.GameMode != GameMode.Single && LobbyManager.Instance.Runner.IsRunning)
             {
                 PopupUI.OnVisible("ゲームを終了しますか？", "再度同じルームには入れませんが、よろしいですか？", PopupUI.Type.Alert, () =>
                 {
@@ -54,16 +54,20 @@ namespace EyeMoT
                     Application.Quit();
                     #endif
                 }, true);
-                return;
             }
-
-            #if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-            #elif UNITY_WEBGL
-            
-            #else            
-            Application.Quit();
-            #endif
+            else
+            {
+                PopupUI.OnVisible("ゲームを終了しますか？", "", PopupUI.Type.Alert, () =>
+                {
+                    #if UNITY_EDITOR
+                    UnityEditor.EditorApplication.isPlaying = false;
+                    #elif UNITY_WEBGL
+                    
+                    #else            
+                    Application.Quit();
+                    #endif
+                }, true);
+            }
         }
     }
 }

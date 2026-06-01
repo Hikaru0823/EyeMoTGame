@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using EyeMoT.Fusion;
 using Fusion;
 using KanKikuchi.AudioManager;
@@ -46,6 +48,7 @@ namespace EyeMoT.Balloon
         [Networked] private Vector3 NetworkedStartPoint { get; set; }
         [Networked] private Vector3 NetworkedEndPoint { get; set; }
         [Networked] private Vector3 NetworkedTargetPosition { get; set; }
+        [Networked] private NetworkBool IsSwitchMode {get; set;}
         [Networked,  OnChangedRender(nameof(UpdateBalloonCount))] public int NetwrokedBalloonCount  { get; set; }
 
 
@@ -53,6 +56,8 @@ namespace EyeMoT.Balloon
         {
             if(Object.HasInputAuthority)
                 Local = this;
+            if(Object.HasStateAuthority)
+                IsSwitchMode = SettingManager.Instance.GameData.IsSwitchMode == 0;
             InitializeComponents();
             ApplyNetworkedVisuals();
         }
@@ -68,7 +73,13 @@ namespace EyeMoT.Balloon
                 return;
 
             if (GetInput(out BalloonNetworkInput input) && input.HasMouse)
+            {    
                 UpdateLineBeam(input.MouseUV, input.ScreenAspect);
+                if(IsSwitchMode && input.IsButtonPush && _currentBalloon != null)
+                {
+                    StartCoroutine(ShortTimeBeamRoutine(_currentBalloon));
+                }
+            }
             else
                 ClearLineBeam(false);
 
@@ -291,19 +302,21 @@ namespace EyeMoT.Balloon
 
         private void OnNetworkedHasHitTargetChanged()
         {
-            _lineRenderer.enabled = NetworkedHasHitTarget;
-            _hitEffect.SetActive(NetworkedHasHitTarget);
+            bool state = IsSwitchMode ? false : NetworkedHasHitTarget;
+            _lineRenderer.enabled = state;
+            _hitEffect.SetActive(state);
 
             if(!Object.HasInputAuthority) return;
 
-            if (NetworkedHasHitTarget)
+            _targetImage.transform.localScale = Vector3.one * SettingManager.Instance.BalloonData.VisualScale * 
+                                                (NetworkedHasHitTarget ? _targetImageRatio : _targetImageScaleOnMiss);
+
+            if (state)
             {    
-                _targetImage.transform.localScale = Vector3.one * SettingManager.Instance.BalloonData.VisualScale * _targetImageRatio;
                 PlayBeamSound();
             }
             else
             {    
-                _targetImage.transform.localScale = Vector3.one * SettingManager.Instance.BalloonData.VisualScale * _targetImageScaleOnMiss;
                 StopBeamSound();
             }
         }
@@ -337,6 +350,21 @@ namespace EyeMoT.Balloon
 
             _isBeamSoundPlaying = false;
             SEManager.Instance.Stop(SEPath.BEAM);
+        }
+
+        private IEnumerator ShortTimeBeamRoutine(Balloon balloon)
+        {
+            _lineRenderer.enabled = true;
+            PlayBeamSound();
+            _hitEffect.SetActive(true);
+            if(balloon != null)
+                balloon.OnPlayerButtonPushed();
+
+            yield return new WaitForSeconds(0.1f);
+
+            _lineRenderer.enabled = false;
+            StopBeamSound();
+            _hitEffect.SetActive(false);
         }
 
         private void UpdateBalloonCount()

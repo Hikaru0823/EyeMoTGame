@@ -8,5 +8,6 @@ namespace EyeMoT.Balloon
         public NetworkBool HasMouse;
         public Vector2 MouseUV;
         public float ScreenAspect;
+        public bool IsButtonPush;
     }
 }
