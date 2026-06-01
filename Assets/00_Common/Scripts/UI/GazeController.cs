@@ -33,6 +33,11 @@ namespace EyeMoT
                 button.onClick.AddListener(() => SetState(false));
         }
 
+        void OnDisable()
+        {
+            SetState(false);
+        }
+
         void LateUpdate()
         {
             if(!Enable)
