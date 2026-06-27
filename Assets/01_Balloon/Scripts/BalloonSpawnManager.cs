@@ -28,7 +28,6 @@ namespace EyeMoT.Balloon
         [SerializeField] private GameObject _spawnVolume;
 
         [Header("Settings")]
-        [SerializeField] private int _maxBalloons = 10;
         [SerializeField] private float _balloonSpeed = 2f;
         [SerializeField] private float _offsetFromVolumeEdge = 1.1f;
         [SerializeField] private bool _visibleCollision = false;
@@ -36,6 +35,8 @@ namespace EyeMoT.Balloon
         private readonly List<Balloon> _activeBalloons = new List<Balloon>();
         public int BalloonCount => _activeBalloons.Count;
         public Action OnBalloonDestroyed;
+        private BalloonSpawnManager.GenerationPatern _currentPatern;
+        private int _maxBalloons;
 
         void Update()
         {
@@ -49,16 +50,16 @@ namespace EyeMoT.Balloon
             }
         }
 
-        public void SpawnInitialBalloons(GenerationPatern patern)
+        public void SpawnInitialBalloons(GenerationPatern patern, int maxBalloons)
         {
-            _maxBalloons = SettingManager.Instance.GameData.BalloonAmount;
+            _currentPatern = patern;
+            _maxBalloons = maxBalloons;
             for(int i = 0; i < _maxBalloons; i++)
                 SpawnBalloonPatern(patern);
         }
 
         public Balloon SpawnPreviewBalloon(Vector3 spawnPosition, Vector3 spawnRotation, bool randomColor = false)
         {
-
             Balloon newBalloon = LobbyManager.Instance.Runner.Spawn(_balloonPrefab, spawnPosition, Quaternion.Euler(spawnRotation), onBeforeSpawned: (runner, obj) => {
                         obj.GetComponent<Balloon>().NetworkedColor = randomColor ? new Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value) : Color.red;
                     });
@@ -76,6 +77,7 @@ namespace EyeMoT.Balloon
 
         private void SpawnBalloonPatern(GenerationPatern patern)
         {
+            if(!GameManager.Instance.IsStart) return;
             BalloonSpawnData spawnData = GetBalloonSpawnData();
             var randomRotate = Quaternion.Euler(0, 0, UnityEngine.Random.Range(-90f, 90f));
             var randomColor = new Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value);
@@ -222,7 +224,7 @@ namespace EyeMoT.Balloon
 
             if (_activeBalloons.Count > 0)
             {
-                SpawnBalloonPatern(SettingManager.Instance.GameData.BalloonGeneratePatern);
+                SpawnBalloonPatern(_currentPatern);
             }
         }
 
@@ -240,7 +242,7 @@ namespace EyeMoT.Balloon
             if(!LobbyManager.Instance.Runner.IsServer) return;
             _activeBalloons.Remove(balloon);
             LobbyManager.Instance.Runner.Despawn(balloon.Object);
-            SpawnBalloonPatern(SettingManager.Instance.GameData.BalloonGeneratePatern);
+            SpawnBalloonPatern(_currentPatern);
         }
 
         private enum Side

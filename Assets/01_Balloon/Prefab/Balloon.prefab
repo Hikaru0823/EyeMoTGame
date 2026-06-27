@@ -164,6 +164,7 @@ GameObject:
   - component: {fileID: 6711869350807581642}
   - component: {fileID: 6981455131539824850}
   - component: {fileID: 3196009019209200007}
+  - component: {fileID: 4195432272801000409}
   m_Layer: 0
   m_Name: Balloon
   m_TagString: Balloon
@@ -306,6 +307,23 @@ MonoBehaviour:
     Position: 0.01
     Rotation: 0.01
     Scale: 0.01
+--- !u!114 &4195432272801000409
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3435283679340697554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e336ea3506a11f41a7c99b7912156d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetId: 01
+  label: "\u98A8\u8239"
+  group: balloon
+  radiusPx: -1
+  registeredId: 
 --- !u!1 &5118067505039475703
 GameObject:
   m_ObjectHideFlags: 0

@@ -23,9 +23,10 @@ namespace EyeMoT.Balloon
         [SerializeField] private TMP_Text _gameTimeText;
         [SerializeField] private TMP_Text _balloonCountText;
         [SerializeField] private TabManager _mainTabManager;
-        private bool _isStart = false;
+        public bool IsStart = false;
         private float _time = 0f;
         private int _balloonCount = 0;
+        public bool IsAnalyze = false;
 
         void Start()
         {
@@ -71,6 +72,12 @@ namespace EyeMoT.Balloon
             PreviewManager.Instance.ResetBalloon();
         }
 
+        public void OnClickStartButton(bool isAnalyze)
+        {
+            IsAnalyze = isAnalyze;
+            GameStart();
+        }
+
         public void GameStart()
         {
             CursorManager.Instance.SetCursorVisible(false);
@@ -92,13 +99,27 @@ namespace EyeMoT.Balloon
             _balloonCountText.text = "×" + 0;
             _balloonCount = 0;
             _time = 0f;
-            _isStart = true;
+            IsStart = true;
+
+
+            if(IsAnalyze)
+            {
+                Debug.Log("GazeAnalyzeManager: AnalyzeStart");
+                GazeAnalyseManager.AnalyzeStart(
+                    sessionId: "BalloonGame",
+                    targetCamera: Camera.main,
+                    sampleHz: 30f
+                );
+            }
+            
 
             if(!LobbyManager.Instance.Runner.IsServer) return;
 
             Timer.Instance.StartTimer(LobbyManager.Instance.Runner.Tick, SettingManager.Instance.GameData.GameTime);
 
-            BalloonSpawnManager.Instance.SpawnInitialBalloons(SettingManager.Instance.GameData.BalloonGeneratePatern);
+            var patern = IsAnalyze ? BalloonSpawnManager.GenerationPatern.Fix : SettingManager.Instance.GameData.BalloonGeneratePatern;
+            var maxBalloons = IsAnalyze ? 1 : SettingManager.Instance.GameData.BalloonAmount;
+            BalloonSpawnManager.Instance.SpawnInitialBalloons(patern, maxBalloons);
 
             if(PlayerContent.Instance == null)
                 LobbyManager.Instance.Runner.Spawn(_playerContentPrefab, Vector3.zero, Quaternion.identity);
@@ -123,6 +144,8 @@ namespace EyeMoT.Balloon
             #if !UNITY_WEBGL || UNITY_EDITOR
             EyeMoT.GameRecoder.GameRecoder.Instance.RecordEnd();
             #endif
+            if(IsAnalyze)
+                ResultManager.Instance.SetAnalyze(GazeAnalyseManager.AnalyzeEnd());
             ResultManager.Instance.ShowResult();
             _gameTimeText.text = "0.0s";
             BalloonSpawnManager.Instance.ResetBalloons();
@@ -158,12 +181,13 @@ namespace EyeMoT.Balloon
         {
             _mainTabManager.OpenPanel("Title");
             ResultManager.Instance.StopRecordHeatmap();
+            //GazeSessionResult result = GazeAnalyseManager.AnalyzeEnd();
             #if !UNITY_WEBGL || UNITY_EDITOR
             EyeMoT.GameRecoder.GameRecoder.Instance.RecordEnd();
             #endif
             CursorManager.Instance.SetCursorVisible(true);
             BGMManager.Instance.Play(BGMPath.BALLOON_TITLE, volumeRate: 0.5f);
-            _isStart = false;
+            IsStart = false;
             BalloonSpawnManager.Instance.ResetBalloons();
 
             Init();
@@ -171,7 +195,7 @@ namespace EyeMoT.Balloon
 
         public int UpdateBalloonCount()
         {
-            if(!_isStart) return 0;
+            if(!IsStart) return 0;
             //var count = 0;
             // foreach(var player in PlayerContent.Everyone)
             //     count ++= player.NetwrokedBalloonCount;
@@ -183,14 +207,14 @@ namespace EyeMoT.Balloon
 
         private void UpdateGameTime(float time)
         {
-            if(!_isStart) return;
+            if(!IsStart) return;
 
             _gameTimeText.text = time.ToString("F1") + "s";
         }
 
         private void OnTimeUp()
         {
-            _isStart = false;
+            IsStart = false;
             GameEnd();
         }
 

@@ -23,6 +23,10 @@ namespace EyeMoT.Balloon
         [SerializeField] private TeamResultItemUI[] _teamResultItems;
         [SerializeField] private HeatmapTextureData[] _heatmapTextureData;
         private PlayerObject[] _heatmapPlayer_FirstIsLocal;
+
+        [SerializeField] private GameObject _analyzePanel;
+        [SerializeField] private TMP_Text[] _analyzeTexts;
+
         void Start()
         {
             LobbyManager.OnReliableDataReceivedEvent -= OnReliableDataReceived;
@@ -45,6 +49,7 @@ namespace EyeMoT.Balloon
 
         public void StartRecordHeatmap(PlayerObject[] players)
         {
+            
             _resultTabManager.OpenPanel("Score");
 
             HeatmapRenderer.Instance.ClearHeatmap();
@@ -64,6 +69,16 @@ namespace EyeMoT.Balloon
         {
             if(PlayerObject.Local.Team != PlayerRegistry.TeamState.Spectator)
                 HeatmapRenderer.Instance.StopHeatmap(false);
+        }
+
+        public void SetAnalyze(GazeSessionResult result)
+        {
+            _analyzePanel.SetActive(GameManager.Instance.IsAnalyze);
+            if(result == null)
+                return;
+            _analyzeTexts[0].text = $"{result.averageAccuracyScore:F2}";
+            _analyzeTexts[1].text = $"{result.averageStabilityScore:F2}";
+            _analyzeTexts[2].text = $"{result.averageAttentionScore:F2}";
         }
 
         public void ShowResult()
