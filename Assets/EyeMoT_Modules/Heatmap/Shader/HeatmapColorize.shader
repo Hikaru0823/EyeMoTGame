@@ -69,7 +69,9 @@ Shader "Custom/HeatmapColorize"
                     return fixed4(0, 0, 0, 0);
 
                 float3 col = HeatmapColor(t);
-                float alpha = lerp(0.8, 1.0, saturate(t * _AlphaMultiplier));
+                float edgeFade = smoothstep(_MinVisible, _MinVisible * 80.0 + 0.0001, heat);
+                float heatAlpha = smoothstep(0.0, 1.0, saturate(t * _AlphaMultiplier));
+                float alpha = edgeFade * lerp(0.5, 1.0, heatAlpha);
 
                 return fixed4(col, alpha);
             }

@@ -6,6 +6,7 @@ Shader "Custom/HeatmapStamp"
         _MouseUV ("Mouse UV", Vector) = (0.5, 0.5, 0, 0)
         _Radius ("Radius", Float) = 0.05
         _Intensity ("Intensity", Float) = 0.02
+        _Softness ("Softness", Range(0.0, 3.0)) = 1.5
         _Aspect ("Aspect", Float) = 1.0
     }
 
@@ -26,6 +27,7 @@ Shader "Custom/HeatmapStamp"
             float4 _MouseUV;
             float _Radius;
             float _Intensity;
+            float _Softness;
             float _Aspect;
 
             struct appdata
@@ -55,7 +57,12 @@ Shader "Custom/HeatmapStamp"
                 float2 delta = i.uv - _MouseUV.xy;
                 delta.x *= _Aspect;
                 float d = length(delta);
-                float spot = 1.0 - smoothstep(0.0, _Radius, d);
+                float radius = max(_Radius, 0.0001);
+                float softness = max(_Softness, 0.0);
+                float coreRadius = radius * lerp(0.9, 0.02, saturate(softness));
+                float outerRadius = radius * lerp(1.0, 4.0, saturate(softness / 3.0));
+                float spot = 1.0 - smoothstep(coreRadius, outerRadius, d);
+                spot *= exp(-pow(d / max(radius * lerp(0.5, 2.0, saturate(softness / 3.0)), 0.0001), 2.0));
 
                 float heat = prev + spot * _Intensity;
                 heat = saturate(heat); // 0～1に丸める

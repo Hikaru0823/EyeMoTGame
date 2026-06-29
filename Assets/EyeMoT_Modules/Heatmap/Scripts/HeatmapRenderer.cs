@@ -38,6 +38,7 @@ namespace EyeMoT.Heatmap
         [SerializeField] private int _textureSize = 512;
         [SerializeField] private float _radius = 0.05f;
         [SerializeField] private float _intensity = 0.02f;
+        [SerializeField, Range(0f, 3f)] private float _softness = 1.5f;
         [SerializeField] private string _saveDir = "/YOUR_RECORD/GazeData/";
 
         private RenderTexture _heatRT;
@@ -73,6 +74,14 @@ namespace EyeMoT.Heatmap
             if (_colorizeMaterial != null)
             {
                 _colorizeMaterial.SetTexture("_MainTex", _heatRT);
+            }
+        }
+
+        void Update()
+        {
+            if(Input.GetKeyDown(KeyCode.F1))
+            {
+                VisibleHeatmap(!_previewImage.enabled);
             }
         }
 
@@ -302,6 +311,7 @@ namespace EyeMoT.Heatmap
             _stampMaterial.SetTexture("_MainTex", tempRT);
             _stampMaterial.SetFloat("_Radius", _radius);
             _stampMaterial.SetFloat("_Intensity", _intensity);
+            _stampMaterial.SetFloat("_Softness", _softness);
             _stampMaterial.SetFloat("_Aspect", (float)_screenWidth / _screenHeight);
 
             if (hasPrev)
