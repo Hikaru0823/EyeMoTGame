@@ -28,6 +28,12 @@ namespace EyeMoT.Balloon
 
         private void Update()
         {
+            if(GameManager.Instance.IsStart && GameManager.Instance.IsAnalyze)
+            {
+                ApplyRotation(_initRotate);
+                return;
+            }
+
             GetNormalizedMousePosition(out Vector2 mouseUV);
             UpdateRotation(Time.deltaTime, mouseUV);
         }

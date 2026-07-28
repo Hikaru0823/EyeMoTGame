@@ -19,6 +19,7 @@ namespace EyeMoT.Balloon
         [SerializeField] private GameObject _readyStateVisual;
         [SerializeField] private ResultItemUI _resultItem;
         [SerializeField] private RectTransform _worldCanvas;
+        [SerializeField] private Sprite[] _targetSprites; // 0: Circle, 1: Square
         private Camera _targetCamera;
 
         [Header("Settings")]
@@ -187,9 +188,9 @@ namespace EyeMoT.Balloon
 
             if(_hasHitTarget)
             {
-                _targetPosition = _currentBalloon.transform.position;
+                _targetPosition = GameManager.Instance.IsAnalyze ? hit.point :_currentBalloon.transform.position;
                 _startPoint = transform.position;
-                _endPoint = _currentBalloon.transform.position;
+                _endPoint = GameManager.Instance.IsAnalyze ? hit.point :_currentBalloon.transform.position;
                 NotifyCurrentBalloonHit(true);
             }
         }
@@ -212,7 +213,8 @@ namespace EyeMoT.Balloon
         {
             _nextHitNotifyTime = 0f;
             NotifyCurrentBalloonHit(canNotifyBalloon);
-            _targetPosition = _currentBalloon.transform.position;
+            if(!GameManager.Instance.IsAnalyze)
+                _targetPosition = _currentBalloon.transform.position;
         }
 
         private void OnMissTarget(bool canNotifyBalloon)
@@ -261,6 +263,7 @@ namespace EyeMoT.Balloon
             }
 
             //ローカルで処理する
+            
             if (Object.HasInputAuthority)
                 _targetImage.transform.position = _targetPosition;
             else
@@ -308,8 +311,13 @@ namespace EyeMoT.Balloon
 
             if(!Object.HasInputAuthority) return;
 
-            _targetImage.transform.localScale = Vector3.one * SettingManager.Instance.BalloonData.VisualScale * 
+            if(!GameManager.Instance.IsAnalyze)
+            {
+                _targetImage.transform.localScale = Vector3.one * SettingManager.Instance.BalloonData.VisualScale * 
                                                 (NetworkedHasHitTarget ? _targetImageRatio : _targetImageScaleOnMiss);
+                _targetImage.GetComponent<SpriteRenderer>().sprite = NetworkedHasHitTarget ? _targetSprites[1] : _targetSprites[0];
+            }
+            
 
             if (state)
             {    

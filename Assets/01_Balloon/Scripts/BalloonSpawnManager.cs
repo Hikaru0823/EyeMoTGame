@@ -30,8 +30,10 @@ namespace EyeMoT.Balloon
         [Header("Settings")]
         [SerializeField] private float _balloonSpeed = 2f;
         [SerializeField] private float _offsetFromVolumeEdge = 1.1f;
+        [SerializeField, Min(0f)] private float _spawnInsetFromVolumeEdge = 0.8f;
         [SerializeField] private bool _visibleCollision = false;
 
+        public List<Color> balloonColorHistory = new List<Color>();
         private readonly List<Balloon> _activeBalloons = new List<Balloon>();
         public int BalloonCount => _activeBalloons.Count;
         public Action OnBalloonDestroyed;
@@ -47,6 +49,14 @@ namespace EyeMoT.Balloon
                 {
                     balloon.VisibleCollision(_visibleCollision);
                 }
+            }
+        }
+
+        void LateUpdate()
+        {
+            if (GameManager.Instance.IsStart && _activeBalloons.Count < _maxBalloons)
+            {
+                SpawnBalloonPatern(_currentPatern);
             }
         }
 
@@ -73,6 +83,7 @@ namespace EyeMoT.Balloon
                 LobbyManager.Instance.Runner.Despawn(balloon.Object);
             }
             _activeBalloons.Clear();
+            balloonColorHistory.Clear();
         }
 
         private void SpawnBalloonPatern(GenerationPatern patern)
@@ -90,14 +101,17 @@ namespace EyeMoT.Balloon
                     newBalloon.StartMove(spawnData.MoveTargetDirection, _balloonSpeed);
                     newBalloon.VisibleCollision(_visibleCollision);
                     _activeBalloons.Add(newBalloon);
+                    balloonColorHistory.Add(randomColor);
                     break;
                 case GenerationPatern.Fix:
                     Balloon newBalloon_fix = LobbyManager.Instance.Runner.Spawn(_balloonPrefab, GetRandomPositionWithinVolume(_spawnVolume), randomRotate, onBeforeSpawned: (runner, obj) => {
                         obj.GetComponent<Balloon>().NetworkedColor = randomColor;
+                        obj.GetComponent<Balloon>().EnableSpawnAnimation = true;
                     });
                     newBalloon_fix.GetComponent<NetworkRigidbody3D>().RBIsKinematic = true;
                     newBalloon_fix.VisibleCollision(_visibleCollision);
                     _activeBalloons.Add(newBalloon_fix);
+                    balloonColorHistory.Add(randomColor);
                     break;
             }
         }
@@ -105,13 +119,12 @@ namespace EyeMoT.Balloon
 
         private Vector3 GetRandomPositionWithinVolume(GameObject volume)
         {
-            Vector3 volumePosition = volume.transform.position;
-            Vector3 volumeScale = volume.transform.localScale;
+            Bounds bounds = GetVolumeBounds(volume);
 
             return new Vector3(
-                UnityEngine.Random.Range(volumePosition.x - volumeScale.x / 2f, volumePosition.x + volumeScale.x / 2f),
-                UnityEngine.Random.Range(volumePosition.y - volumeScale.y / 2f, volumePosition.y + volumeScale.y / 2f),
-                UnityEngine.Random.Range(volumePosition.z - volumeScale.z / 2f, volumePosition.z + volumeScale.z / 2f)
+                GetRandomValueInside(bounds.min.x/1.5f, bounds.max.x/1.5f, _spawnInsetFromVolumeEdge),
+                GetRandomValueInside(bounds.min.y/1.2f, bounds.max.y/1.2f, _spawnInsetFromVolumeEdge),
+                bounds.center.z
             );
         }
 
@@ -120,11 +133,25 @@ namespace EyeMoT.Balloon
             if (!spawnSide.HasValue)
                 spawnSide = (Side)UnityEngine.Random.Range(0, 4);
 
-            Vector3 spawnPosition = GetPositionWithinVolume(spawnSide.Value, _spawnVolume);
+            Bounds volumeBounds = GetVolumeBounds(_spawnVolume);
+            float spawnRangeRatio = GameManager.Instance.IsAnalyze ? 4f / 5f : 1f;
+            Vector3 spawnPosition = GetSpawnPosition(
+                spawnSide.Value,
+                volumeBounds,
+                spawnRangeRatio
+            );
             Side randomTargetSide = GetRandomSideExcept(spawnSide.Value);
-            Side diagonalSide = GetDiagonalSide(randomTargetSide, spawnSide.Value, spawnPosition);
-            TargetSideInfo targetSideInfo = new TargetSideInfo(diagonalSide, _offsetFromVolumeEdge);
-            Vector3 targetPosition = GetPositionWithinVolume(randomTargetSide, _spawnVolume, targetSideInfo);
+            Side diagonalSide = GetDiagonalSide(
+                randomTargetSide,
+                spawnSide.Value,
+                spawnPosition,
+                volumeBounds.center
+            );
+            Vector3 targetPosition = GetTargetPositionOutsideVolume(
+                randomTargetSide,
+                diagonalSide,
+                volumeBounds
+            );
             Vector3 moveTargetDirection = (targetPosition - spawnPosition).normalized;
 
             return new BalloonSpawnData(spawnPosition, moveTargetDirection);
@@ -132,19 +159,19 @@ namespace EyeMoT.Balloon
 
         private Side GetRandomSideExcept(Side excludeSide)
         {
-            Side[] candidateSides = new Side[4];
-            int index = 0;
+            int side = UnityEngine.Random.Range(0, 3);
+            if (side >= (int)excludeSide)
+                side++;
 
-            foreach (Side side in Enum.GetValues(typeof(Side)))
-            {
-                if (side != excludeSide)
-                    candidateSides[index++] = side;
-            }
-
-            return candidateSides[UnityEngine.Random.Range(0, candidateSides.Length)];
+            return (Side)side;
         }
 
-        private Side GetDiagonalSide(Side targetSide, Side spawnSide, Vector3 spawnPosition)
+        private Side GetDiagonalSide(
+            Side targetSide,
+            Side spawnSide,
+            Vector3 spawnPosition,
+            Vector3 volumeCenter
+        )
         {
             Side diagonalSide = Side.Left;
             Side opposedSide = Side.Left;
@@ -152,7 +179,7 @@ namespace EyeMoT.Balloon
             {
                 case Side.Left:
                 case Side.Right:
-                    opposedSide = spawnPosition.y > _spawnVolume.transform.position.y ? Side.Up : Side.Down;
+                    opposedSide = spawnPosition.y > volumeCenter.y ? Side.Up : Side.Down;
                     if((int)targetSide % 2 == 1)
                     {
                         diagonalSide = (Side)(((int)spawnSide + 2) % 4);
@@ -162,7 +189,7 @@ namespace EyeMoT.Balloon
                     break;
                 case Side.Up:
                 case Side.Down:
-                    opposedSide = spawnPosition.x > _spawnVolume.transform.position.x ? Side.Right : Side.Left;
+                    opposedSide = spawnPosition.x > volumeCenter.x ? Side.Right : Side.Left;
                     if((int)targetSide % 2 == 0)
                     {
                         diagonalSide = (Side)(((int)spawnSide + 2) % 4);
@@ -176,37 +203,99 @@ namespace EyeMoT.Balloon
             return diagonalSide;
         }
 
-        private Vector3 GetPositionWithinVolume(Side targetSide, GameObject volume, TargetSideInfo? targetSideInfo = null)
+        private Vector3 GetSpawnPosition(Side spawnSide, Bounds bounds, float rangeRatio)
         {
-            Vector3 result = Vector3.zero;
-            Vector3 volumePosition = volume.transform.position;
-            Vector3 volumeScale = targetSideInfo == null ? volume.transform.localScale : targetSideInfo.Offset * volume.transform.localScale; // Assuming the volume is centered and scale represents the full size
+            rangeRatio = Mathf.Clamp01(rangeRatio);
+            float xDistance = Mathf.Max(
+                0f,
+                bounds.extents.x * rangeRatio - _spawnInsetFromVolumeEdge
+            );
+            float yDistance = Mathf.Max(
+                0f,
+                bounds.extents.y * rangeRatio - _spawnInsetFromVolumeEdge
+            );
+            Vector3 position = bounds.center;
+
+            switch (spawnSide)
+            {
+                case Side.Left:
+                case Side.Right:
+                    position.x += spawnSide == Side.Left ? -xDistance : xDistance;
+                    position.y += UnityEngine.Random.Range(-yDistance, yDistance);
+                    break;
+                case Side.Up:
+                case Side.Down:
+                    position.x += UnityEngine.Random.Range(-xDistance, xDistance);
+                    position.y += spawnSide == Side.Up ? yDistance : -yDistance;
+                    break;
+            }
+
+            return position;
+        }
+
+        private Vector3 GetTargetPositionOutsideVolume(
+            Side targetSide,
+            Side diagonalSide,
+            Bounds bounds
+        )
+        {
+            Vector3 position = bounds.center;
+            float targetOffset = Mathf.Max(1.01f, _offsetFromVolumeEdge);
 
             switch (targetSide)
             {
                 case Side.Left:
                 case Side.Right:
-                    volumePosition.x = targetSide == Side.Left ? volumePosition.x - volumeScale.x / 2f : volumePosition.x + volumeScale.x / 2f;
-                    float y = 0f;
-                    if(targetSideInfo == null)
-                        y = UnityEngine.Random.Range(-volumeScale.y / 2f, volumeScale.y / 2f);
-                    else
-                        y = targetSideInfo.DiagonalSide == Side.Up ? UnityEngine.Random.Range(0, volumeScale.y / 2f) : UnityEngine.Random.Range(-volumeScale.y / 2f, 0);
-                    result = volumePosition + new Vector3(0, y, 0);
+                    position.x +=
+                        (targetSide == Side.Left ? -1f : 1f) *
+                        bounds.extents.x *
+                        targetOffset;
+                    position.y = diagonalSide == Side.Up
+                        ? UnityEngine.Random.Range(bounds.center.y, bounds.max.y)
+                        : UnityEngine.Random.Range(bounds.min.y, bounds.center.y);
                     break;
                 case Side.Up:
                 case Side.Down:
-                    volumePosition.y = targetSide == Side.Up ? volumePosition.y + volumeScale.y / 2f : volumePosition.y - volumeScale.y / 2f;
-                    float x = UnityEngine.Random.Range(-volumeScale.x / 2f, volumeScale.x / 2f);
-                    if(targetSideInfo == null)
-                        x = UnityEngine.Random.Range(-volumeScale.x / 2f, volumeScale.x / 2f);
-                    else
-                        x = targetSideInfo.DiagonalSide == Side.Right ? UnityEngine.Random.Range(0, volumeScale.x / 2f) : UnityEngine.Random.Range(-volumeScale.x / 2f, 0);
-                    result = volumePosition + new Vector3(x, 0, 0);
+                    position.x = diagonalSide == Side.Right
+                        ? UnityEngine.Random.Range(bounds.center.x, bounds.max.x)
+                        : UnityEngine.Random.Range(bounds.min.x, bounds.center.x);
+                    position.y +=
+                        (targetSide == Side.Up ? 1f : -1f) *
+                        bounds.extents.y *
+                        targetOffset;
                     break;
             }
 
-            return result;
+            return position;
+        }
+
+        private static Bounds GetVolumeBounds(GameObject volume)
+        {
+            if (volume.TryGetComponent<BoxCollider>(out var boxCollider))
+                return boxCollider.bounds;
+
+            Debug.LogWarning(
+                $"{volume.name} has no BoxCollider. Transform scale is used as a fallback."
+            );
+            return new Bounds(volume.transform.position, Abs(volume.transform.lossyScale));
+        }
+
+        private static float GetRandomValueInside(float min, float max, float inset)
+        {
+            inset = Mathf.Max(0f, inset);
+            if (max - min <= inset * 2f)
+                return (min + max) * 0.5f;
+
+            return UnityEngine.Random.Range(min + inset, max - inset);
+        }
+
+        private static Vector3 Abs(Vector3 value)
+        {
+            return new Vector3(
+                Mathf.Abs(value.x),
+                Mathf.Abs(value.y),
+                Mathf.Abs(value.z)
+            );
         }
 
         public void DestroyBalloon(Balloon balloon, HashSet<PlayerRef> sources)
@@ -219,13 +308,12 @@ namespace EyeMoT.Balloon
                     PlayerContent.GetPlayer(playerRef).NetwrokedBalloonCount++;
             }
 
-            _activeBalloons.Remove(balloon);
-            LobbyManager.Instance.Runner.Despawn(balloon.Object);
-
-            if (_activeBalloons.Count > 0)
+            if (_currentPatern == GenerationPatern.Float && _activeBalloons.Count <= _maxBalloons)
             {
-                SpawnBalloonPatern(_currentPatern);
+                balloon.GetComponent<GazeAnalyseTarget>()?.Unregister(GazeTargetEndReason.Destroyed);
             }
+            LobbyManager.Instance.Runner.Despawn(balloon.Object);
+            _activeBalloons.Remove(balloon);
         }
 
         public void PlayDestroyEffects(Vector3 pos)
@@ -240,9 +328,11 @@ namespace EyeMoT.Balloon
         public void DeleteBalloon(Balloon balloon)
         {
             if(!LobbyManager.Instance.Runner.IsServer) return;
-            _activeBalloons.Remove(balloon);
+
+            balloon.GetComponent<GazeAnalyseTarget>()?.Unregister(_currentPatern == GenerationPatern.Float ? GazeTargetEndReason.Removed : GazeTargetEndReason.Destroyed);
+
             LobbyManager.Instance.Runner.Despawn(balloon.Object);
-            SpawnBalloonPatern(_currentPatern);
+            _activeBalloons.Remove(balloon);
         }
 
         private enum Side
@@ -267,16 +357,5 @@ namespace EyeMoT.Balloon
             }
         }
 
-        private class TargetSideInfo
-        {
-            public Side DiagonalSide { get; }
-            public float Offset { get; }
-
-            public TargetSideInfo(Side diagonalSide, float offset)
-            {
-                DiagonalSide = diagonalSide;
-                Offset = offset;
-            }
-        }
     }
 }

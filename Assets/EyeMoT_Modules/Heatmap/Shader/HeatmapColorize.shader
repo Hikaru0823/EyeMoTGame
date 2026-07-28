@@ -5,6 +5,7 @@ Shader "Custom/HeatmapColorize"
         _MainTex ("Heat Texture", 2D) = "black" {}
         _MaxValue ("Max Value", Float) = 1.0
         _AlphaMultiplier ("Alpha Multiplier", Float) = 1.0
+        _Opacity ("Opacity", Range(0.0, 1.0)) = 1.0
         _MinVisible ("Min Visible Threshold", Float) = 0.001
     }
 
@@ -24,6 +25,7 @@ Shader "Custom/HeatmapColorize"
             sampler2D _MainTex;
             float _MaxValue;
             float _AlphaMultiplier;
+            float _Opacity;
             float _MinVisible;
 
             struct appdata
@@ -71,7 +73,7 @@ Shader "Custom/HeatmapColorize"
                 float3 col = HeatmapColor(t);
                 float edgeFade = smoothstep(_MinVisible, _MinVisible * 80.0 + 0.0001, heat);
                 float heatAlpha = smoothstep(0.0, 1.0, saturate(t * _AlphaMultiplier));
-                float alpha = edgeFade * lerp(0.5, 1.0, heatAlpha);
+                float alpha = edgeFade * lerp(0.5, 1.0, heatAlpha) * saturate(_Opacity);
 
                 return fixed4(col, alpha);
             }

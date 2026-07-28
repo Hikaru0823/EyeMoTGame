@@ -233,8 +233,8 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.2925
-  m_Height: 0.78
+  m_Radius: 0.3
+  m_Height: 0.3
   m_Direction: 1
   m_Center: {x: 0, y: -0.07, z: 0}
 --- !u!54 &6711869350807581642
@@ -322,8 +322,14 @@ MonoBehaviour:
   targetId: 01
   label: "\u98A8\u8239"
   group: balloon
+  startMode: 1
+  targetShape: 1
   radiusPx: -1
+  keepRawSamples: 0
+  registerOnEnable: 1
+  unregisterOnDisable: 1
   registeredId: 
+  isRegistered: 0
 --- !u!1 &5118067505039475703
 GameObject:
   m_ObjectHideFlags: 0
@@ -469,8 +475,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: -0.0697, z: 0}
-  m_LocalScale: {x: 0.57525, y: 0.39199987, z: 0.57525}
-  m_ConstrainProportionsScale: 1
+  m_LocalScale: {x: 0.57525, y: 0.575, z: 0.57525}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1313007508990118235}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -481,7 +487,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5656865846705647111}
-  m_Mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!23 &4392868035393621736
 MeshRenderer:
   m_ObjectHideFlags: 0

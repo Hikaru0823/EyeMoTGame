@@ -188,7 +188,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1fe2c0c52e7c9c4ca5c114ea7647c6a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ui: {fileID: 648998967582197133}
+  _panel: {fileID: 0}
+  _bgPanel: {fileID: 0}
   title: {fileID: 536131506055506304}
   description: {fileID: 2215991152446823465}
   okButton: {fileID: 3822329589611718919}

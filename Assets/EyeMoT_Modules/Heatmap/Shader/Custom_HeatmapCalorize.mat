@@ -32,5 +32,7 @@ Material:
     - _AlphaMultiplier: 1
     - _MaxValue: 1
     - _MinVisible: 0.001
+    - _Opacity: 1
+    - _RedAreaTightness: 3
     m_Colors: []
   m_BuildTextureStacks: []

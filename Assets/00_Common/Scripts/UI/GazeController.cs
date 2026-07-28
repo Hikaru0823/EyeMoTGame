@@ -14,11 +14,9 @@ namespace EyeMoT
 
         [Header("Settings")]
         public float gazeTime = 1.5f;
-        public bool isSelectable = false;
         public bool isContinueClickable = true;
         public bool Enable = true;
         bool _isStart = false;
-        bool _isSelect = false;
         float _time = 0;
 
         void Awake()
@@ -30,12 +28,12 @@ namespace EyeMoT
 
             //連続で押せるボタンはクリックしたときにGazeGageをリセットしたい
             if(isContinueClickable)
-                button.onClick.AddListener(() => SetState(false));
+                button.onClick.AddListener(() => Reset());
         }
 
         void OnDisable()
         {
-            SetState(false);
+            Reset();
         }
 
         void LateUpdate()
@@ -45,14 +43,14 @@ namespace EyeMoT
             if(_isStart)
             {
                 if(!button.interactable)
-                    SetState(false);
+                    Reset();
                 //注視時間が経過したらボタンを押す
                 _time += Time.deltaTime;
                 gazeGage.fillAmount = _time / gazeTime;
                 if(_time > gazeTime)
                 {
                     button.onClick.Invoke();
-                    SetState(true);
+                    Reset();
                 }
             }
         }
@@ -61,8 +59,7 @@ namespace EyeMoT
         {
             if(!Enable)
                 return;
-            if(_isSelect)
-                return;
+
             if(!button.interactable)
                 return;
             _isStart = true;
@@ -72,34 +69,17 @@ namespace EyeMoT
         {
             if(!Enable)
                 return;
-            if(_isSelect)
-                return;
+
             if(!button.interactable)
                 return;
-            SetState(false);
+            Reset();
         }
 
-        public void SetState(bool isSelected)
+        public void Reset()
         {
-            if(isSelected)
-            {
-                _isStart = false;
-                _time = 0;
-                if(isSelectable)
-                {    
-                    _isSelect = true;
-                    gazeGage.fillAmount = 1;
-                }
-                else
-                    gazeGage.fillAmount = 0;
-            }
-            else
-            {
-                _isSelect = false;
-                _isStart = false;
-                _time = 0;
-                gazeGage.fillAmount = 0;
-            }
+            _isStart = false;
+            _time = 0;
+            gazeGage.fillAmount = 0;
         }
     }
 }

@@ -167,6 +167,16 @@ public class GazeAnalyseManager : MonoBehaviour
         return _instance.CompleteTarget(targetId, GazeTargetEndReason.Removed);
     }
 
+    public static GazeTargetResult Destroy(string targetId)
+    {
+        if (_instance == null)
+        {
+            return null;
+        }
+
+        return _instance.CompleteTarget(targetId, GazeTargetEndReason.Destroyed);
+    }
+
     public static GazeSessionResult AnalyzeEnd(string memo = "")
     {
         if (_instance == null)
@@ -315,7 +325,8 @@ public class GazeAnalyseManager : MonoBehaviour
         );
 
         _activeTargets.Remove(targetId);
-        _completedResults.Add(result);
+        if(endReason== GazeTargetEndReason.Destroyed)
+            _completedResults.Add(result);
 
         return result;
     }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using EyeMoT.Fusion;
 using Fusion;
@@ -25,6 +26,7 @@ namespace EyeMoT.Balloon
         [SerializeField] private bool _shakeOnHit = true;
         [SerializeField] private float _shakeStrength = 0.2f;
         [SerializeField] private float _shakeSpeed = 40f;
+        [SerializeField, Min(0f)] private float _spawnAnimationDuration = 0.5f;
 
         private Action<Balloon> _onLifeTimeExpired;
         private Vector3 _moveTargetDirection;
@@ -48,6 +50,7 @@ namespace EyeMoT.Balloon
         #endregion
         private bool _hasDefaultValues;
         public bool IsPreview = false;
+        [Networked] public bool EnableSpawnAnimation { get; set; } = false;
 
         // ネットワーク上に生成されたときの初期化処理。
         public override void Spawned()
@@ -179,7 +182,10 @@ namespace EyeMoT.Balloon
                 _balloonVisual.GetComponent<Renderer>().material = _imageMaterial;
                 _balloonImage.sprite = BalloonImageEditor.Instance.CurrentSprite;
             }
-            _balloonVisual.transform.localScale = _defaultVisualScale * SettingManager.Instance.BalloonData.VisualScale;
+            if(EnableSpawnAnimation)
+                StartCoroutine(SpawnAnimation());
+            else
+                _balloonVisual.transform.localScale = _defaultVisualScale * SettingManager.Instance.BalloonData.VisualScale;
 
             _collisionVisual.transform.localScale = _defaultCollisionScale * SettingManager.Instance.BalloonData.CollisionScale;
             var collision = GetComponent<CapsuleCollider>();
@@ -305,7 +311,7 @@ namespace EyeMoT.Balloon
                 _networkRigidbody.Rigidbody.velocity = targetDirection * moveSpeed;
         }
 
-        #region Shake Effect
+        #region Effect
         // バルーンの見た目に揺れ用の位置オフセットを適用する。
         private void ApplyShakeOffset(Vector3 offset)
         {
@@ -325,6 +331,54 @@ namespace EyeMoT.Balloon
                 Mathf.PerlinNoise(time, time) - 0.5f
             ) * (_shakeStrength * 2f);
         }
+
+        IEnumerator SpawnAnimation()
+        {
+            if (_balloonVisual == null)
+                yield break;
+
+            SEManager.Instance.Play(SEPath.BALLOON_SPAWN);
+            Vector3 startScale = Vector3.zero;
+            Vector3 targetScale =
+                _defaultVisualScale * SettingManager.Instance.BalloonData.VisualScale;
+            Vector3 overshootScale = targetScale * 1.1f;
+            float duration = Mathf.Max(0f, _spawnAnimationDuration);
+
+            _balloonVisual.transform.localScale = startScale;
+
+            if (duration <= 0f)
+            {
+                _balloonVisual.transform.localScale = targetScale;
+                yield break;
+            }
+
+            float elapsedTime = 0f;
+            while (elapsedTime < duration)
+            {
+                elapsedTime += Time.deltaTime;
+                float normalizedTime = Mathf.Clamp01(elapsedTime / duration);
+
+                if (normalizedTime < 0.7f)
+                {
+                    float growTime = normalizedTime / 0.7f;
+                    float easedGrowTime = Mathf.SmoothStep(0f, 1f, growTime);
+                    _balloonVisual.transform.localScale =
+                        Vector3.LerpUnclamped(startScale, overshootScale, easedGrowTime);
+                }
+                else
+                {
+                    float settleTime = (normalizedTime - 0.7f) / 0.3f;
+                    float easedSettleTime = Mathf.SmoothStep(0f, 1f, settleTime);
+                    _balloonVisual.transform.localScale =
+                        Vector3.LerpUnclamped(overshootScale, targetScale, easedSettleTime);
+                }
+
+                yield return null;
+            }
+
+            _balloonVisual.transform.localScale = targetScale;
+        }
+
         #endregion
     }
 }

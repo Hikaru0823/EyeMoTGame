@@ -5,23 +5,8 @@ using UnityEngine.UI;
 
 namespace EyeMoT
 {
-    public class EyeMoTMouse : MonoBehaviour
+    public class EyeMoTMouse : SceneSingleton<EyeMoTMouse>
     {
-        #region Singleton
-        private static EyeMoTMouse instance = null;
-        void Awake()
-        {
-            if (instance == null)
-            {
-                instance = this;
-                DontDestroyOnLoad(this.gameObject);
-            }
-            else
-            {
-                Destroy(this.gameObject);
-            }
-        }
-        #endregion
         [Header("Resources")]
         [SerializeField] private Sprite[] icons = default;
         [SerializeField] private Button gazeButton = default;
@@ -33,7 +18,6 @@ namespace EyeMoT
         private Process cmdProcess = default;
 
         private bool isTrackable = false;
-        private bool isInitialized = false;
 
         void Start()
         {
@@ -83,7 +67,6 @@ namespace EyeMoT
                 this.keyboard = Keyboard.current;
 
                 this.OnStatusChanged(!this.isTrackable);
-                this.isInitialized = true;
             }
         }
 
@@ -170,9 +153,6 @@ namespace EyeMoT
                 this.cmdProcess.StandardInput.WriteLine("mouse_on");
                 this.isTrackable = true;
             }
-
-            // if (this.isInitialized)
-            //     this.audioSource.Play();
         }
     }
 }

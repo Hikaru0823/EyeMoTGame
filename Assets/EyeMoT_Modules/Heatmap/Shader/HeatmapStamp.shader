@@ -64,7 +64,9 @@ Shader "Custom/HeatmapStamp"
                 float spot = 1.0 - smoothstep(coreRadius, outerRadius, d);
                 spot *= exp(-pow(d / max(radius * lerp(0.5, 2.0, saturate(softness / 3.0)), 0.0001), 2.0));
 
-                float heat = prev + spot * _Intensity;
+                float accumulatedHeat = prev + spot * _Intensity;
+
+                float heat = max(prev, min(accumulatedHeat, spot));
                 heat = saturate(heat); // 0～1に丸める
 
                 return fixed4(heat, 0, 0, 1);

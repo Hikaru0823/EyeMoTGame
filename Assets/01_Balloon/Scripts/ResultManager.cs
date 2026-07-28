@@ -15,6 +15,10 @@ namespace EyeMoT.Balloon
     public class ResultManager : SceneSingleton<ResultManager>
     {
         [Header("Resources")]
+        [SerializeField] private AnalyzeItemUI _analyzeItemPrefab;
+        [SerializeField] private Transform _analyzeItemHolder;
+        [SerializeField] private TMP_Text[] _totalAnalyzeText;
+        [SerializeField] private GameObject _analyzeButton;
         [SerializeField] private TabManager _resultTabManager;
         [SerializeField] private GameObject _retryButton;
         [SerializeField] private TMP_Text _balloonCountText;
@@ -22,10 +26,10 @@ namespace EyeMoT.Balloon
         [SerializeField] private Transform _teamResultItemHolder;
         [SerializeField] private TeamResultItemUI[] _teamResultItems;
         [SerializeField] private HeatmapTextureData[] _heatmapTextureData;
+        [SerializeField] private GameObject _tablePanel;
+        [SerializeField] private Graph.GraphGenerater[] _graphGeneraters;
         private PlayerObject[] _heatmapPlayer_FirstIsLocal;
 
-        [SerializeField] private GameObject _analyzePanel;
-        [SerializeField] private TMP_Text[] _analyzeTexts;
 
         void Start()
         {
@@ -40,8 +44,14 @@ namespace EyeMoT.Balloon
             foreach (var data in _heatmapTextureData)
             {
                 data._heatmapImage.texture = null;
+                data._gazeLineImage.texture = null;
                 data.IsReady = false;
+                data.IsHeatmapReady = false;
+                data.IsGazeLineReady = false;
+                data.HeatmapProgress = 0f;
+                data.GazeLineProgress = 0f;
                 data._heatmapImage.enabled = false;
+                data._gazeLineImage.enabled = false;
                 data._noneReceivedPanel.SetActive(false);
                 data._progressBar.fillAmount = 0f;
             }
@@ -68,21 +78,84 @@ namespace EyeMoT.Balloon
         public void StopRecordHeatmap()
         {
             if(PlayerObject.Local.Team != PlayerRegistry.TeamState.Spectator)
-                HeatmapRenderer.Instance.StopHeatmap(false);
+                HeatmapRenderer.Instance.StopHeatmapRecording();
         }
 
         public void SetAnalyze(GazeSessionResult result)
         {
-            _analyzePanel.SetActive(GameManager.Instance.IsAnalyze);
+            for (int j = 1; j < _analyzeItemHolder.childCount; j++)
+            {
+                Destroy(_analyzeItemHolder.GetChild(j).gameObject);
+            }
+            
             if(result == null)
                 return;
-            _analyzeTexts[0].text = $"{result.averageAccuracyScore:F2}";
-            _analyzeTexts[1].text = $"{result.averageStabilityScore:F2}";
-            _analyzeTexts[2].text = $"{result.averageAttentionScore:F2}";
+            
+            int i = 0;
+            List<float> accuracyScores = new List<float>();
+            List<float> stabilityScores = new List<float>();
+            List<float> attentionScores = new List<float>();
+
+            foreach (var analized in result.targetResults)
+            {
+                var item = Instantiate(_analyzeItemPrefab, _analyzeItemHolder);
+                item.Init(analized, BalloonSpawnManager.Instance.balloonColorHistory[i]);
+                accuracyScores.Add(analized.accuracyScore);
+                stabilityScores.Add(analized.stabilityScore);
+                attentionScores.Add(analized.attentionScore);
+                i++;
+                Debug.Log($"Reason: {analized.endReason}");
+            }
+
+            _graphGeneraters[0].GenerateGraph(accuracyScores, result.averageAccuracyScore, 1, BalloonSpawnManager.Instance.balloonColorHistory);
+            _graphGeneraters[1].GenerateGraph(stabilityScores, result.averageStabilityScore, 1, BalloonSpawnManager.Instance.balloonColorHistory);
+            _graphGeneraters[2].GenerateGraph(attentionScores, result.averageAttentionScore, 1, BalloonSpawnManager.Instance.balloonColorHistory);
+            StartCoroutine(RefreshAnalyzeScroll());
+            _totalAnalyzeText[0].text = result.averageAccuracyScore.ToString("F2");
+            _totalAnalyzeText[1].text = result.averageStabilityScore.ToString("F2");
+            _totalAnalyzeText[2].text = result.averageAttentionScore.ToString("F2");
+        }
+
+        public void ChangeAnalyzePanel(string panelName)
+        {
+            _tablePanel.SetActive(false);
+            foreach (var graph in _graphGeneraters)
+            {
+                graph.gameObject.SetActive(false);
+            }
+            switch (panelName)
+            {
+                case "評価":
+                    _tablePanel.SetActive(true);
+                    break;
+                case "正確性":
+                    _graphGeneraters[0].gameObject.SetActive(true);
+                    break;
+                case "安定性":
+                    _graphGeneraters[1].gameObject.SetActive(true);
+                    break;
+                case "注視性":
+                    _graphGeneraters[2].gameObject.SetActive(true);
+                    break;
+            }
+        }
+
+        private IEnumerator RefreshAnalyzeScroll()
+        {
+            yield return null;
+
+            Canvas.ForceUpdateCanvases();
+            var content = (RectTransform)_analyzeItemHolder;
+            LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+
+            ScrollRect scrollRect = content.GetComponentInParent<ScrollRect>();
+            if (scrollRect != null)
+                scrollRect.horizontalNormalizedPosition = 0f;
         }
 
         public void ShowResult()
         {
+            _analyzeButton.SetActive(GameManager.Instance.IsAnalyze);
             StartCoroutine(ShowResultRoutine());
         }
 
@@ -99,10 +172,8 @@ namespace EyeMoT.Balloon
 
             if (PlayerObject.Local.Team != PlayerRegistry.TeamState.Spectator)
             {
-                var heatmapResult = HeatmapRenderer.Instance.StopHeatmap();
-                _heatmapTextureData[PlayerObject.Local.Index]._heatmapImage.texture = heatmapResult.HeatmapTexture;
-                _heatmapTextureData[PlayerObject.Local.Index].IsReady = true;
-                SendHeatmapTextureToServer(heatmapResult.HeatmapTexture);
+                HeatmapRenderer.Instance.StopHeatmap(
+                    onComplete: SendHeatmapTextureToServer);
             }
 
             var rankedPlayers = PlayerContent.Everyone
@@ -138,7 +209,7 @@ namespace EyeMoT.Balloon
 
                 item.Init(sortedTeamScores[i].Value, topScore == sortedTeamScores[i].Value ? 0 : 1);
                 item.transform.SetAsLastSibling();
-    }
+            }
 
             yield return null;
 
@@ -169,8 +240,28 @@ namespace EyeMoT.Balloon
             ShowHeatmapChange();
         }
 
+        private void SendHeatmapTextureToServer(HeatmapResult heatmap)
+        {
+            if (heatmap == null)
+            {
+                return;
+            }
 
-        private void SendHeatmapTextureToServer(RenderTexture texture)
+            HeatmapTextureData textureData =
+                _heatmapTextureData[PlayerObject.Local.Index];
+            textureData._heatmapImage.texture = heatmap.HeatmapTexture;
+            textureData._gazeLineImage.texture = heatmap.GazeLineTexture;
+            textureData.IsHeatmapReady = true;
+            textureData.IsGazeLineReady = true;
+            textureData.HeatmapProgress = 1f;
+            textureData.GazeLineProgress = 1f;
+            textureData.IsReady = true;
+
+            SendTextureToServer(heatmap.HeatmapTexture, false);
+            SendTextureToServer(heatmap.GazeLineTexture, true);
+        }
+
+        private void SendTextureToServer(RenderTexture texture, bool isGazeLine)
         {
             NetworkRunner runner = LobbyManager.Instance != null ? LobbyManager.Instance.Runner : null;
             if (runner == null || !runner.IsRunning || texture == null)
@@ -185,7 +276,9 @@ namespace EyeMoT.Balloon
             }
 
             int playerIndex = PlayerObject.Local != null ? PlayerObject.Local.Index : 255;
-            ReliableKey reliableKey = ReliableKeys.GetHeatMapKey(playerIndex, false);
+            ReliableKey reliableKey = isGazeLine
+                ? ReliableKeys.GetGazeLineKey(playerIndex, false)
+                : ReliableKeys.GetHeatMapKey(playerIndex, false);
 
             runner.SendReliableDataToServer(reliableKey, pngBytes);
         }
@@ -193,7 +286,12 @@ namespace EyeMoT.Balloon
         private byte[] EncodeRenderTextureToPng(RenderTexture texture)
         {
             RenderTexture previousActive = RenderTexture.active;
-            Texture2D readableTexture = new Texture2D(texture.width, texture.height, TextureFormat.RGBA32, false);
+            Texture2D readableTexture = new Texture2D(
+                texture.width,
+                texture.height,
+                TextureFormat.RGBA32,
+                false,
+                true);
 
             try
             {
@@ -216,14 +314,26 @@ namespace EyeMoT.Balloon
                 return null;
             }
 
-            Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            Texture2D texture = new Texture2D(
+                2,
+                2,
+                TextureFormat.RGBA32,
+                false,
+                true);
             if (!texture.LoadImage(imageBytes))
             {
                 Destroy(texture);
                 return null;
             }
 
-            RenderTexture renderTexture = new RenderTexture(texture.width, texture.height, 0, RenderTextureFormat.ARGB32);
+            RenderTexture renderTexture = new RenderTexture(
+                texture.width,
+                texture.height,
+                0,
+                RenderTextureFormat.ARGB32,
+                RenderTextureReadWrite.Linear);
+            renderTexture.wrapMode = TextureWrapMode.Clamp;
+            renderTexture.filterMode = FilterMode.Bilinear;
             renderTexture.Create();
 
             Graphics.Blit(texture, renderTexture);
@@ -235,43 +345,76 @@ namespace EyeMoT.Balloon
         private void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, ArraySegment<byte> data)
         {
             key.GetInts(out int dataType, out int playerIndex, out int frameCount, out int reserved);
-            if (dataType != ReliableKeys.HeatmapIndex)
+            bool isHeatmap = dataType == ReliableKeys.HeatmapIndex;
+            bool isGazeLine = dataType == ReliableKeys.GazeLineIndex;
+            if (!isHeatmap && !isGazeLine)
             {
                 return;
             }
 
-            byte[] heatmapPngBytes = new byte[data.Count];
-            Buffer.BlockCopy(data.Array, data.Offset, heatmapPngBytes, 0, data.Count);
+            byte[] pngBytes = new byte[data.Count];
+            Buffer.BlockCopy(data.Array, data.Offset, pngBytes, 0, data.Count);
 
             if (runner.IsServer && reserved == 0)
             {
-                key = ReliableKeys.GetHeatMapKey(playerIndex, true);
-                BroadcastHeatmapBytesToClients(runner, key, heatmapPngBytes, player);
+                key = isGazeLine
+                    ? ReliableKeys.GetGazeLineKey(playerIndex, true)
+                    : ReliableKeys.GetHeatMapKey(playerIndex, true);
+                BroadcastTextureBytesToClients(runner, key, pngBytes, player);
                 return;
             }
 
-            RenderTexture heatmapTexture = DecodeImageBytesToRenderTexture(heatmapPngBytes);
-            _heatmapTextureData[playerIndex]._heatmapImage.texture = heatmapTexture;
-            _heatmapTextureData[playerIndex].IsReady = true;
-            _heatmapTextureData[playerIndex]._progressBar.fillAmount = 1f;
+            RenderTexture texture = DecodeImageBytesToRenderTexture(pngBytes);
+            HeatmapTextureData textureData = _heatmapTextureData[playerIndex];
+
+            if (isGazeLine)
+            {
+                textureData._gazeLineImage.texture = texture;
+                textureData.IsGazeLineReady = true;
+                textureData.GazeLineProgress = 1f;
+            }
+            else
+            {
+                textureData._heatmapImage.texture = texture;
+                textureData.IsHeatmapReady = true;
+                textureData.HeatmapProgress = 1f;
+            }
+
+            textureData.IsReady =
+                textureData.IsHeatmapReady && textureData.IsGazeLineReady;
+            UpdateTextureTransferProgress(textureData);
             ShowHeatmapChange();
 
-            Debug.Log($"<color=orange>[HeatMap]</color> Received heatmap from {player} index {playerIndex}: {heatmapPngBytes.Length} bytes");
+            string textureType = isGazeLine ? "gaze line" : "heatmap";
+            Debug.Log($"<color=orange>[HeatMap]</color> Received {textureType} from {player} index {playerIndex}: {pngBytes.Length} bytes");
         }
 
         private void OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey key, float progress)
         {
             key.GetInts(out int dataType, out int playerIndex, out int frameCount, out int reserved);
-            if (dataType != ReliableKeys.HeatmapIndex)
+            bool isHeatmap = dataType == ReliableKeys.HeatmapIndex;
+            bool isGazeLine = dataType == ReliableKeys.GazeLineIndex;
+            if (!isHeatmap && !isGazeLine)
             {
                 return;
             }
 
-            //Debug.Log($"<color=yellow>[HeatMap]</color> Receiving heatmap from {player} index {playerIndex}: {progress * 100f}%");
-            _heatmapTextureData[playerIndex]._progressBar.fillAmount = progress;
+            HeatmapTextureData textureData = _heatmapTextureData[playerIndex];
+            if (isGazeLine)
+                textureData.GazeLineProgress = progress;
+            else
+                textureData.HeatmapProgress = progress;
+
+            UpdateTextureTransferProgress(textureData);
         }
 
-        private void BroadcastHeatmapBytesToClients(NetworkRunner runner, ReliableKey key, byte[] heatmapPngBytes, PlayerRef excludePlayer = default)
+        private void UpdateTextureTransferProgress(HeatmapTextureData textureData)
+        {
+            textureData._progressBar.fillAmount =
+                (textureData.HeatmapProgress + textureData.GazeLineProgress) * 0.5f;
+        }
+
+        private void BroadcastTextureBytesToClients(NetworkRunner runner, ReliableKey key, byte[] pngBytes, PlayerRef excludePlayer = default)
         {
             foreach (PlayerObject playerObject in PlayerRegistry.Everyone)
             {
@@ -280,7 +423,7 @@ namespace EyeMoT.Balloon
                     continue;
                 }
 
-                runner.SendReliableDataToPlayer(playerObject.Ref, key, heatmapPngBytes);
+                runner.SendReliableDataToPlayer(playerObject.Ref, key, pngBytes);
             }
         }
         public void ShowHeatmapChange()
@@ -289,12 +432,15 @@ namespace EyeMoT.Balloon
                 return;
 
             foreach (var data in _heatmapTextureData)
-                data._heatmapImage.gameObject.SetActive(false);
+            {
+                data._heatmapPanel.SetActive(false);
+            }
 
             int playerIndex = _heatmapPlayer_FirstIsLocal[_heatmapSelecter.CurrentIdx].Index;
             _balloonCountText.text = "× " + (PlayerContent.GetPlayer(_heatmapTextureData[playerIndex].Player.Ref)?.NetwrokedBalloonCount.ToString() ?? "0");
-            _heatmapTextureData[playerIndex]._heatmapImage.gameObject.SetActive(true);
+            _heatmapTextureData[playerIndex]._heatmapPanel.SetActive(true);
             _heatmapTextureData[playerIndex]._heatmapImage.enabled = _heatmapTextureData[playerIndex].IsReady;
+            _heatmapTextureData[playerIndex]._gazeLineImage.enabled = _heatmapTextureData[playerIndex].IsReady;
             _heatmapTextureData[playerIndex]._noneReceivedPanel.SetActive(!_heatmapTextureData[playerIndex].IsReady);
         }
 
@@ -326,10 +472,16 @@ namespace EyeMoT.Balloon
     [Serializable]
     public class HeatmapTextureData
     {
+        [SerializeField] public GameObject _heatmapPanel;
         [SerializeField] public RawImage _heatmapImage;
+        [SerializeField] public RawImage _gazeLineImage;
         [SerializeField] public GameObject _noneReceivedPanel;
         [SerializeField] public Image _progressBar;
         [SerializeField] public bool IsReady;
+        [NonSerialized] public bool IsHeatmapReady;
+        [NonSerialized] public bool IsGazeLineReady;
+        [NonSerialized] public float HeatmapProgress;
+        [NonSerialized] public float GazeLineProgress;
         public PlayerObject Player;
     }
 }

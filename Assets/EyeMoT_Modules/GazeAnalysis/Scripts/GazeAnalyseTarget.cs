@@ -43,18 +43,10 @@ public class GazeAnalyseTarget : MonoBehaviour
         }
     }
 
-    private void OnDisable()
-    {
-        if (unregisterOnDisable)
-        {
-            Unregister();
-        }
-    }
-
-    private void OnDestroy()
-    {
-        Unregister();
-    }
+    // private void OnDestroy()
+    // {
+    //     Unregister();
+    // }
 
     public void Register()
     {
@@ -82,7 +74,7 @@ public class GazeAnalyseTarget : MonoBehaviour
         isRegistered = !string.IsNullOrEmpty(registeredId);
     }
 
-    public GazeTargetResult Unregister()
+    public GazeTargetResult Unregister(GazeTargetEndReason endReason)
     {
         if (!isRegistered || string.IsNullOrEmpty(registeredId))
         {
@@ -96,7 +88,15 @@ public class GazeAnalyseTarget : MonoBehaviour
             return null;
         }
 
-        GazeTargetResult result = GazeAnalyseManager.Remove(registeredId);
+        GazeTargetResult result;
+        if (endReason == GazeTargetEndReason.Removed)
+        {
+            result = GazeAnalyseManager.Remove(registeredId);
+        }
+        else
+        {
+            result = GazeAnalyseManager.Destroy(registeredId);
+        }
 
         registeredId = "";
         isRegistered = false;

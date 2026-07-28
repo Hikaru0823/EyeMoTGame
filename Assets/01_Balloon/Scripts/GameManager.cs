@@ -27,6 +27,7 @@ namespace EyeMoT.Balloon
         private float _time = 0f;
         private int _balloonCount = 0;
         public bool IsAnalyze = false;
+        public BalloonSpawnManager.GenerationPatern CurrentMode => AnalyzeModePopupUI.Instance._currentMode;
 
         void Start()
         {
@@ -72,10 +73,15 @@ namespace EyeMoT.Balloon
             PreviewManager.Instance.ResetBalloon();
         }
 
-        public void OnClickStartButton(bool isAnalyze)
+        public void OnClickStartButton()
         {
-            IsAnalyze = isAnalyze;
             GameStart();
+        }
+
+        public void OnClickAnalyzeButton()
+        {
+            IsAnalyze = true;
+            AnalyzeModePopupUI.OnVisible("評価モードで開始しますか？", "評価モードでは、バルーンは1つしか出現せず、プレイヤーの視線情報を評価することができます。");
         }
 
         public void GameStart()
@@ -117,7 +123,7 @@ namespace EyeMoT.Balloon
 
             Timer.Instance.StartTimer(LobbyManager.Instance.Runner.Tick, SettingManager.Instance.GameData.GameTime);
 
-            var patern = IsAnalyze ? BalloonSpawnManager.GenerationPatern.Fix : SettingManager.Instance.GameData.BalloonGeneratePatern;
+            var patern = IsAnalyze ? CurrentMode : SettingManager.Instance.GameData.BalloonGeneratePatern;
             var maxBalloons = IsAnalyze ? 1 : SettingManager.Instance.GameData.BalloonAmount;
             BalloonSpawnManager.Instance.SpawnInitialBalloons(patern, maxBalloons);
 
@@ -146,6 +152,7 @@ namespace EyeMoT.Balloon
             #endif
             if(IsAnalyze)
                 ResultManager.Instance.SetAnalyze(GazeAnalyseManager.AnalyzeEnd());
+            DebugManager.Instance.DebugOff();
             ResultManager.Instance.ShowResult();
             _gameTimeText.text = "0.0s";
             BalloonSpawnManager.Instance.ResetBalloons();
@@ -186,6 +193,7 @@ namespace EyeMoT.Balloon
             EyeMoT.GameRecoder.GameRecoder.Instance.RecordEnd();
             #endif
             CursorManager.Instance.SetCursorVisible(true);
+            DebugManager.Instance.DebugOff();
             BGMManager.Instance.Play(BGMPath.BALLOON_TITLE, volumeRate: 0.5f);
             IsStart = false;
             BalloonSpawnManager.Instance.ResetBalloons();
