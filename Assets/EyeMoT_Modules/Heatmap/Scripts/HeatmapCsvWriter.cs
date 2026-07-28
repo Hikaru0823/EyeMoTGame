@@ -26,7 +26,7 @@ namespace EyeMoT.Heatmap
             writeData.Add(new string[] { date.ToString("yyyy/MM/dd HH:mm:ss"), totalDistance.ToString("F1") });
             writeData.Add(new string[] { "#Screen_X", "Screen_Y", "GazeDataCount" });
             writeData.Add(new string[] { Screen.width.ToString(), Screen.height.ToString(), data.Count.ToString() });
-            writeData.Add(new string[] { "#GameTime", "Gaze_X", "Gaze_Y"});
+            writeData.Add(new string[] { "#GameTime", "Gaze_X", "Gaze_Y", "Attention", "Meditation", "Alpha", "Beta", "Delta", "Theta", "Gamma"});
             writeData.AddRange(data);
             csvManager.CSVWrite(writeData, path + Application.productName + "_" + date.ToString("yyyyMMddHHmmss") + ".csv", isAppend: false);
 

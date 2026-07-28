@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using EyeMoT.Heatmap;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -11,7 +12,7 @@ public class FocusCalmManager : MonoBehaviour
 {
     public enum EData
     {
-        Attention, Meditation, BandPower, 
+        Attention = 0, Meditation, BandPower, 
     }
     [Serializable]
     public class FocusCalmServer
@@ -52,7 +53,7 @@ public class FocusCalmManager : MonoBehaviour
     {
         if(Input.GetKeyDown(KeyCode.Tab))
         {
-            _isVisible = !_isVisible;
+            _isVisible = !_panelAnimator.GetCurrentAnimatorStateInfo(0).IsName("Panel In");
             _panelAnimator.Play(_isVisible ? "Panel In" : "Panel Out");
         }
     }
@@ -107,6 +108,8 @@ public class FocusCalmManager : MonoBehaviour
         Debug.Log("Data : " + data);
 
         if(!Enum.TryParse(header.Replace("/", ""), out EData result)) return;
+
+        HeatmapRenderer.Instance.Enqueue(new Dictionary<EData, string>(){{result, data.Replace(";", ",")}});
 
         switch(result)
         {

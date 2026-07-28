@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections.Concurrent;
 
 namespace EyeMoT.Heatmap
 {
@@ -68,7 +69,7 @@ namespace EyeMoT.Heatmap
         private float _pendingDecay;
 
         private List<string[]> _dataList = new List<string[]>();
-        private float _time = 0f;
+        private float _startTime = 0f;
 
         private Vector2 _prevUV;
         private bool _hasPrev = false;
@@ -79,6 +80,15 @@ namespace EyeMoT.Heatmap
         private int _screenWidth;
         private int _screenHeight;
         private string _dirName = "";
+
+        //テスト用
+        ConcurrentQueue<Dictionary<FocusCalmManager.EData, string>> _receivedData = new();
+        public void Enqueue(Dictionary<FocusCalmManager.EData, string> data)
+        {
+            if (data == null) return;
+            if(!_isStart) return;
+            _receivedData.Enqueue(data);
+        }
 
         void Start()
         {
@@ -134,6 +144,7 @@ namespace EyeMoT.Heatmap
         {
             Debug.Log($"<color=orange>[HeatMap]</color> Start Recording.");
             _isStart = true;
+            _startTime = Time.time;
             _dirName = dirName;
             _hasPrev = false;
             _hasPreviousGazeLineUV = false;
@@ -375,7 +386,24 @@ namespace EyeMoT.Heatmap
 
             Vector2 uv;
             bool inside = TryGetMouseUV(out uv);
-            _dataList.Add(new string[] { Time.time.ToString("F2"), (_screenWidth * uv.x).ToString("F0"), (_screenHeight * uv.y).ToString("F0")});
+
+            //テスト用
+            string[] dataSet = new string[6]{ 
+                (Time.time-_startTime).ToString("F2"), (_screenWidth * uv.x).ToString("F0"), (_screenHeight * uv.y).ToString("F0"), 
+                "", "", "",
+                };
+
+            while (_receivedData.TryDequeue(out Dictionary<FocusCalmManager.EData, string> data))
+            {
+                foreach (KeyValuePair<FocusCalmManager.EData, string> pair in data)
+                {
+                    dataSet[(int)pair.Key+3] = pair.Value;
+                }
+            }
+            _dataList.Add(dataSet);
+            /////////
+
+            //_dataList.Add(new string[] { (Time.time-_startTime).ToString("F2"), (_screenWidth * uv.x).ToString("F0"), (_screenHeight * uv.y).ToString("F0")});
 
             if (inside)
                 DrawGazeLine(uv);
@@ -504,7 +532,7 @@ namespace EyeMoT.Heatmap
         private void StampUV(Vector2 uv, ref Vector2 prevUV, ref bool hasPrev)
         {
             StampUVToHeatmap(uv, ref prevUV, ref hasPrev);
-            _dataList.Add(new string[] { Time.time.ToString("F2"), (_screenWidth * uv.x).ToString("F0"), (_screenHeight * uv.y).ToString("F0")});
+            //_dataList.Add(new string[] { Time.time.ToString("F2"), (_screenWidth * uv.x).ToString("F0"), (_screenHeight * uv.y).ToString("F0")});
         }
 
         private void StampUVToHeatmap(Vector2 uv, ref Vector2 prevUV, ref bool hasPrev)
