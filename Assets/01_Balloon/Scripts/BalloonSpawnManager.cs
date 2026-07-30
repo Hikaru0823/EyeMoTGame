@@ -34,18 +34,42 @@ namespace EyeMoT.Balloon
         [SerializeField] private bool _visibleCollision = false;
 
         public List<Color> balloonColorHistory = new List<Color>();
-        private readonly List<Balloon> _activeBalloons = new List<Balloon>();
-        public int BalloonCount => _activeBalloons.Count;
+        public readonly List<Balloon> ActiveBalloons = new List<Balloon>();
+        public int BalloonCount => ActiveBalloons.Count;
         public Action OnBalloonDestroyed;
         private BalloonSpawnManager.GenerationPatern _currentPatern;
         private int _maxBalloons;
+
+        public bool TryGetFirstBalloonScreenPosition(out Vector2 screenPosition)
+        {
+            screenPosition = Vector2.zero;
+
+            if (ActiveBalloons.Count == 0)
+                return false;
+
+            Balloon balloon = ActiveBalloons[0];
+            if (balloon == null)
+                return false;
+
+            var targetCamera = Camera.main;
+
+            if (targetCamera == null)
+                return false;
+
+            Vector3 screenPoint = targetCamera.WorldToScreenPoint(balloon.transform.position);
+            if (screenPoint.z <= 0f)
+                return false;
+
+            screenPosition = new Vector2(screenPoint.x, screenPoint.y);
+            return true;
+        }
 
         void Update()
         {
             if (Input.GetKeyDown(KeyCode.D) && PlayerData.Instance.CanUseShortCut)
             {
                 _visibleCollision = !_visibleCollision;
-                foreach(var balloon in _activeBalloons)
+                foreach(var balloon in ActiveBalloons)
                 {
                     balloon.VisibleCollision(_visibleCollision);
                 }
@@ -54,7 +78,7 @@ namespace EyeMoT.Balloon
 
         void LateUpdate()
         {
-            if (GameManager.Instance.IsStart && _activeBalloons.Count < _maxBalloons)
+            if (GameManager.Instance.IsStart && ActiveBalloons.Count < _maxBalloons)
             {
                 SpawnBalloonPatern(_currentPatern);
             }
@@ -78,11 +102,11 @@ namespace EyeMoT.Balloon
 
         public void ResetBalloons()
         {
-            foreach(var balloon in _activeBalloons)
+            foreach(var balloon in ActiveBalloons)
             {
                 LobbyManager.Instance.Runner.Despawn(balloon.Object);
             }
-            _activeBalloons.Clear();
+            ActiveBalloons.Clear();
             balloonColorHistory.Clear();
         }
 
@@ -98,9 +122,9 @@ namespace EyeMoT.Balloon
                     Balloon newBalloon = LobbyManager.Instance.Runner.Spawn(_balloonPrefab, spawnData.Position, randomRotate, onBeforeSpawned: (runner, obj) => {
                         obj.GetComponent<Balloon>().NetworkedColor = randomColor;
                     });
-                    newBalloon.StartMove(spawnData.MoveTargetDirection, _balloonSpeed);
+                    newBalloon.StartMove(spawnData.MoveTargetDirection, GameManager.Instance.IsAnalyze ? 0.2f : _balloonSpeed);
                     newBalloon.VisibleCollision(_visibleCollision);
-                    _activeBalloons.Add(newBalloon);
+                    ActiveBalloons.Add(newBalloon);
                     balloonColorHistory.Add(randomColor);
                     break;
                 case GenerationPatern.Fix:
@@ -110,7 +134,7 @@ namespace EyeMoT.Balloon
                     });
                     newBalloon_fix.GetComponent<NetworkRigidbody3D>().RBIsKinematic = true;
                     newBalloon_fix.VisibleCollision(_visibleCollision);
-                    _activeBalloons.Add(newBalloon_fix);
+                    ActiveBalloons.Add(newBalloon_fix);
                     balloonColorHistory.Add(randomColor);
                     break;
             }
@@ -308,12 +332,12 @@ namespace EyeMoT.Balloon
                     PlayerContent.GetPlayer(playerRef).NetwrokedBalloonCount++;
             }
 
-            if (_currentPatern == GenerationPatern.Float && _activeBalloons.Count <= _maxBalloons)
+            if (_currentPatern == GenerationPatern.Float && ActiveBalloons.Count <= _maxBalloons)
             {
                 balloon.GetComponent<GazeAnalyseTarget>()?.Unregister(GazeTargetEndReason.Destroyed);
             }
             LobbyManager.Instance.Runner.Despawn(balloon.Object);
-            _activeBalloons.Remove(balloon);
+            ActiveBalloons.Remove(balloon);
         }
 
         public void PlayDestroyEffects(Vector3 pos)
@@ -332,7 +356,7 @@ namespace EyeMoT.Balloon
             balloon.GetComponent<GazeAnalyseTarget>()?.Unregister(_currentPatern == GenerationPatern.Float ? GazeTargetEndReason.Removed : GazeTargetEndReason.Destroyed);
 
             LobbyManager.Instance.Runner.Despawn(balloon.Object);
-            _activeBalloons.Remove(balloon);
+            ActiveBalloons.Remove(balloon);
         }
 
         private enum Side

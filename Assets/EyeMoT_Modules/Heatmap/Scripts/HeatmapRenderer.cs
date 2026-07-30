@@ -5,6 +5,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Concurrent;
+using EyeMoT.Balloon;
 
 namespace EyeMoT.Heatmap
 {
@@ -80,9 +81,9 @@ namespace EyeMoT.Heatmap
         private int _screenWidth;
         private int _screenHeight;
         private string _dirName = "";
-
         //テスト用
         ConcurrentQueue<Dictionary<FocusCalmManager.EData, string>> _receivedData = new();
+        private string[] _eegValues = new string[3]{"0", "0", "0,0,0,0,0"};
         public void Enqueue(Dictionary<FocusCalmManager.EData, string> data)
         {
             if (data == null) return;
@@ -186,6 +187,7 @@ namespace EyeMoT.Heatmap
             if(!writeCsv)
             {
                 _dataList.Clear();
+                _receivedData.Clear();
                 return result;
             }
 
@@ -197,6 +199,7 @@ namespace EyeMoT.Heatmap
             HeatmapCsvWriter.WriteCsv(System.IO.Path.GetDirectoryName(Application.dataPath) + _saveDir + (_dirName == "" ? "" : $"{_dirName}/"), totalDistance, new List<string[]>(_dataList));
             Debug.Log($"<color=orange>[HeatMap]</color> Data saved to: {System.IO.Path.GetDirectoryName(Application.dataPath) + _saveDir + (_dirName == "" ? "" : $"/{_dirName}/")}");
             _dataList.Clear();
+            _receivedData.Clear();
 
             return result;
         }
@@ -386,20 +389,24 @@ namespace EyeMoT.Heatmap
 
             Vector2 uv;
             bool inside = TryGetMouseUV(out uv);
+            bool hasBalloonScreenPosition = BalloonSpawnManager.Instance.TryGetFirstBalloonScreenPosition(out Vector2 balloonScreenPosition);
+            Balloon.Balloon balloon = BalloonSpawnManager.Instance.ActiveBalloons.Count > 0 ? BalloonSpawnManager.Instance.ActiveBalloons[0] : null;
 
             //テスト用
-            string[] dataSet = new string[6]{ 
-                (Time.time-_startTime).ToString("F2"), (_screenWidth * uv.x).ToString("F0"), (_screenHeight * uv.y).ToString("F0"), 
-                "", "", "",
-                };
-
             while (_receivedData.TryDequeue(out Dictionary<FocusCalmManager.EData, string> data))
             {
                 foreach (KeyValuePair<FocusCalmManager.EData, string> pair in data)
                 {
-                    dataSet[(int)pair.Key+3] = pair.Value;
+                    _eegValues[(int)pair.Key] = pair.Value;
                 }
             }
+            string[] dataSet = new string[9]{
+                (Time.time-_startTime).ToString("F2"), (_screenWidth * uv.x).ToString("F0"), (_screenHeight * uv.y).ToString("F0"),
+                hasBalloonScreenPosition ? balloonScreenPosition.x.ToString("F0") : "",
+                hasBalloonScreenPosition ? balloonScreenPosition.y.ToString("F0") : "",
+                balloon != null ? (balloon.IsHit ? "1" : "0") : "0",
+                _eegValues[0], _eegValues[1], _eegValues[2],
+                };
             _dataList.Add(dataSet);
             /////////
 

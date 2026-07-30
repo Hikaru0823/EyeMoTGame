@@ -34,7 +34,7 @@ namespace EyeMoT.Balloon
         private Vector3 _balloonVisualDefaultLocalPosition;
         private readonly HashSet<PlayerRef> _hitSources = new HashSet<PlayerRef>();
 
-        [Networked] private NetworkBool IsHit { get; set; }
+        [Networked] public NetworkBool IsHit { get; set; }
         [Networked] private float HitTime { get; set; }
         [Networked] private float NetworkedLifeTime { get; set; }
 
