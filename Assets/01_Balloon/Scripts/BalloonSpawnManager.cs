@@ -44,7 +44,12 @@ namespace EyeMoT.Balloon
         private int _generateSideIdx = 0;
         private int _lastScreenWidth;
         private int _lastScreenHeight;
-        private Coroutine _spawnRoutine;
+        private Coroutine? _spawnRoutine;
+        private const float AnalyzeInitialWaitSeconds = 10f;
+        private const float AnalyzeMoveSeconds = 5f;
+        private const float AnalyzeCornerWaitSeconds = 5f;
+        public string[] _csvType = new string[]{"Balloon_X","Balloon_Y","Balloon_Hit"};
+        private float _startTime = 0;
 
         private void Start()
         {
@@ -155,6 +160,17 @@ namespace EyeMoT.Balloon
 
         void LateUpdate()
         {
+            if(ActiveBalloons.Count > 0)
+            {
+                var balloonPos = Camera.main.WorldToScreenPoint(ActiveBalloons[0].transform.position);
+                int isHit = ActiveBalloons[0].IsHit ? 1 : 0;
+                RecordManager.Instance.Enqueue(new RecordSample
+                {
+                    Type = _csvType,
+                    Data = new string[]{balloonPos.x.ToString("F1"), balloonPos.y.ToString("F1"), isHit.ToString()},
+                    TimeStamp = Time.time - _startTime
+                });
+            }
             if(GameManager.Instance.IsAnalyze) return;
             if (GameManager.Instance.IsStart && ActiveBalloons.Count < _maxBalloons)
             {
@@ -164,13 +180,21 @@ namespace EyeMoT.Balloon
 
         public void SpawnInitialBalloons(GenerationPatern patern, int maxBalloons)
         {
+            _startTime = Time.time;
             _currentPatern = patern;
             _maxBalloons = maxBalloons;
+            _generateSideIdx = 0;
             _spawnVolumeScreenRatio = GameManager.Instance.IsAnalyze ? 1 : 1.3f;
             FitSpawnVolumeToCamera();
+            if (_spawnRoutine != null)
+            {
+                StopCoroutine(_spawnRoutine);
+                _spawnRoutine = null;
+            }
+
             if(GameManager.Instance.IsAnalyze)
             {
-                _spawnRoutine = StartCoroutine(SpawnRoutin(patern, SettingManager.Instance.GameData.GenerarteInterval));
+                _spawnRoutine = StartCoroutine(AnalyzeSpawnRoutine());
             }
             else
             {
@@ -179,12 +203,91 @@ namespace EyeMoT.Balloon
             }
         }
 
-        private IEnumerator SpawnRoutin(GenerationPatern patern, float interval)
+        private IEnumerator AnalyzeSpawnRoutine()
         {
+            yield return new WaitForSeconds(AnalyzeInitialWaitSeconds);
+
             while(true)
             {
-                SpawnBalloonPatern(patern);
-                yield return new WaitForSeconds(interval);
+                DeleteActiveAnalyzeBalloons();
+
+                Bounds volumeBounds = GetVolumeBounds(_spawnVolume);
+                Balloon newBalloon = SpawnAnalyzeBalloon(volumeBounds.center);
+                Vector3 targetPosition = GetAnalyzeCornerPosition(volumeBounds, _generateSideIdx);
+                float moveDistance = Vector3.Distance(newBalloon.transform.position, targetPosition);
+                float moveSpeed = moveDistance / AnalyzeMoveSeconds;
+
+                newBalloon.StartMove(
+                    (targetPosition - newBalloon.transform.position).normalized,
+                    moveSpeed
+                );
+
+                yield return new WaitForSeconds(AnalyzeMoveSeconds);
+
+                StopAnalyzeBalloonAtTarget(newBalloon, targetPosition);
+
+                yield return new WaitForSeconds(AnalyzeCornerWaitSeconds);
+
+                _generateSideIdx++;
+            }
+        }
+
+        private Balloon SpawnAnalyzeBalloon(Vector3 spawnPosition)
+        {
+            var randomRotate = Quaternion.Euler(0, 0, UnityEngine.Random.Range(-90f, 90f));
+            var randomColor = new Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value);
+            Balloon newBalloon = LobbyManager.Instance.Runner.Spawn(_balloonPrefab, spawnPosition, randomRotate, onBeforeSpawned: (runner, obj) => {
+                Balloon balloon = obj.GetComponent<Balloon>();
+                balloon.NetworkedColor = randomColor;
+                balloon.EnableSpawnAnimation = true;
+            });
+            newBalloon.VisibleCollision(_visibleCollision);
+            ActiveBalloons.Add(newBalloon);
+            balloonColorHistory.Add(randomColor);
+
+            return newBalloon;
+        }
+
+        private void StopAnalyzeBalloonAtTarget(Balloon balloon, Vector3 targetPosition)
+        {
+            if (balloon == null || !balloon.Object || !balloon.Object.IsValid)
+                return;
+
+            balloon.StartMove(Vector3.zero, 0f);
+
+            if (balloon.TryGetComponent<NetworkRigidbody3D>(out var networkRigidbody))
+                networkRigidbody.Teleport(targetPosition);
+            else
+                balloon.transform.position = targetPosition;
+        }
+
+        private void DeleteActiveAnalyzeBalloons()
+        {
+            for (int i = ActiveBalloons.Count - 1; i >= 0; i--)
+            {
+                Balloon balloon = ActiveBalloons[i];
+                if (balloon == null || !balloon.Object || !balloon.Object.IsValid)
+                {
+                    ActiveBalloons.RemoveAt(i);
+                    continue;
+                }
+
+                DeleteBalloon(balloon);
+            }
+        }
+
+        private Vector3 GetAnalyzeCornerPosition(Bounds bounds, int cornerIndex)
+        {
+            switch (cornerIndex % 4)
+            {
+                case 0:
+                    return new Vector3(bounds.min.x - SettingManager.Instance.BalloonData.CollisionScale, bounds.max.y + SettingManager.Instance.BalloonData.CollisionScale, bounds.center.z);
+                case 1:
+                    return new Vector3(bounds.max.x + SettingManager.Instance.BalloonData.CollisionScale, bounds.max.y + SettingManager.Instance.BalloonData.CollisionScale, bounds.center.z);
+                case 2:
+                    return new Vector3(bounds.max.x + SettingManager.Instance.BalloonData.CollisionScale, bounds.min.y - SettingManager.Instance.BalloonData.CollisionScale, bounds.center.z);
+                default:
+                    return new Vector3(bounds.min.x - SettingManager.Instance.BalloonData.CollisionScale, bounds.min.y - SettingManager.Instance.BalloonData.CollisionScale, bounds.center.z);
             }
         }
 
@@ -204,7 +307,11 @@ namespace EyeMoT.Balloon
             }
             ActiveBalloons.Clear();
             balloonColorHistory.Clear();
-            StopCoroutine(_spawnRoutine);
+            if (_spawnRoutine != null)
+            {
+                StopCoroutine(_spawnRoutine);
+                _spawnRoutine = null;
+            }
         }
 
         private void SpawnBalloonPatern(GenerationPatern patern)

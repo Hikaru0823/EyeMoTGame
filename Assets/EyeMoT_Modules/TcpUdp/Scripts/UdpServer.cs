@@ -30,9 +30,29 @@ public class UdpServer : IServer
     {
         if (_udp != null) return;
 
-        _udp = new UdpClient(_port);
+        try
+        {
+            _udp = CreateBoundUdpClient(_port);
+        }
+        catch (SocketException ex)
+        {
+            _udp = null;
+            Error?.Invoke(ex);
+            Debug.LogError($"[UDP] Failed to bind port {_port}. The port is already in use or not available. {ex.SocketErrorCode}: {ex.Message}");
+            return;
+        }
+
         _cts = new CancellationTokenSource();
         _receiveTask = Task.Run(() => ReceiveLoopAsync(_cts.Token));
+    }
+
+    private static UdpClient CreateBoundUdpClient(int port)
+    {
+        var udp = new UdpClient(AddressFamily.InterNetwork);
+        udp.Client.ExclusiveAddressUse = false;
+        udp.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+        udp.Client.Bind(new IPEndPoint(IPAddress.Any, port));
+        return udp;
     }
 
     public void Stop()
@@ -191,6 +211,12 @@ public class UdpServer : IServer
 
     public async Task BroadcastAsync(List<ClientSession> targetClients, string message)
     {
+        if (_udp == null)
+        {
+            Error?.Invoke(new InvalidOperationException($"UDP server on port {_port} is not running."));
+            return;
+        }
+
         var data = Encoding.UTF8.GetBytes(message);
         foreach (var client in targetClients)
         {
@@ -208,6 +234,12 @@ public class UdpServer : IServer
 
     public async Task SendToClientAsync(ClientSession targetClient, string message)
     {
+        if (_udp == null)
+        {
+            Error?.Invoke(new InvalidOperationException($"UDP server on port {_port} is not running."));
+            return;
+        }
+
         var data = Encoding.UTF8.GetBytes(message);
         try
         {

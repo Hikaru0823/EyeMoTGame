@@ -5,13 +5,13 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Concurrent;
-using EyeMoT.Balloon;
 
 namespace EyeMoT.Heatmap
 {
     public class HeatmapRenderer : MonoBehaviour
     {
-        #region singleton
+        #region シングルトン
+
         public static HeatmapRenderer Instance{get; private set;}
         void Awake()
         {
@@ -24,7 +24,7 @@ namespace EyeMoT.Heatmap
             DontDestroyOnLoad(this.gameObject);
         }
         #endregion
-        
+
         [Header("Resoureces")]
         [SerializeField] private Material _stampMaterial;
         [SerializeField] private Material _decayMaterial;
@@ -37,8 +37,7 @@ namespace EyeMoT.Heatmap
             if(isVisible)
                 _previewImage.texture = heatmapTexture != null ? heatmapTexture : _heatRT;
             _previewImage.enabled = isVisible;
-            if (_gazeLineImage != null)
-                _gazeLineImage.enabled = isVisible;
+            _gazeLineImage.enabled = isVisible;
         }
 
         [Header("Settings")]
@@ -61,7 +60,8 @@ namespace EyeMoT.Heatmap
         [SerializeField] public bool _isDecay = false;
         public void SetHeatmapDecay(bool isDecay) => _isDecay = isDecay;
         [SerializeField, Min(0.0001f)] private float _gazeLineWidth = 0.003f;
-        [SerializeField] private string _saveDir = "/YOUR_RECORD/GazeData/";
+
+        public string[] Type = new string[] { "Gaze_X", "Gaze_Y" };
 
         private RenderTexture _heatRT;
         private RenderTexture _tempRT;
@@ -74,22 +74,16 @@ namespace EyeMoT.Heatmap
 
         private Vector2 _prevUV;
         private bool _hasPrev = false;
-        private Vector2 _previousGazeLineUV;
-        private bool _hasPreviousGazeLineUV;
+        private Vector2 _prevGazeLineUV;
+        private bool _hasPrevGazeLineUV;
         private bool _isStart = false;
         private bool _isDynamicDraw = false;
         private int _screenWidth;
         private int _screenHeight;
-        private string _dirName = "";
-        //テスト用
-        ConcurrentQueue<Dictionary<FocusCalmManager.EData, string>> _receivedData = new();
-        private string[] _eegValues = new string[3]{"0", "0", "0,0,0,0,0"};
-        public void Enqueue(Dictionary<FocusCalmManager.EData, string> data)
-        {
-            if (data == null) return;
-            if(!_isStart) return;
-            _receivedData.Enqueue(data);
-        }
+
+        private Action<RecordSample> _onDataReceived;
+
+        #region 初期化・終了処理
 
         void Start()
         {
@@ -100,7 +94,7 @@ namespace EyeMoT.Heatmap
             _gazeLineRT = CreateColorRT(_textureSize);
             _gazeLineTempRT = CreateColorRT(_textureSize);
 
-            ClearHeatmap();
+            Clear();
 
             if (_previewImage != null)
             {
@@ -141,24 +135,24 @@ namespace EyeMoT.Heatmap
             }
         }
 
-        public void StartHeatmap(string dirName = "", bool isDynamicDraw = false)
+        #endregion
+
+        #region 記録・解析
+
+        public void StartHeatmap(bool isDynamicDraw = false, Action<RecordSample> onDataReceived = null)
         {
+            Clear();
+
+
             Debug.Log($"<color=orange>[HeatMap]</color> Start Recording.");
             _isStart = true;
             _startTime = Time.time;
-            _dirName = dirName;
-            _hasPrev = false;
-            _hasPreviousGazeLineUV = false;
+            _onDataReceived = onDataReceived;
             _isDynamicDraw = isDynamicDraw;
             _previewImage.texture = _heatRT;
         }
 
-        public void StopHeatmapRecording()
-        {
-            _isStart = false;
-        }
-
-        public HeatmapResult StopHeatmap(bool writeCsv = true, Action<HeatmapResult> onComplete = null)
+        public HeatmapResult StopHeatmap(Action<HeatmapResult> onComplete = null)
         {
             Debug.Log($"<color=orange>[HeatMap]</color> Stop Recording.");
             _isStart = false;
@@ -183,23 +177,6 @@ namespace EyeMoT.Heatmap
             {
                 onComplete?.Invoke(result);
             }
-
-            if(!writeCsv)
-            {
-                _dataList.Clear();
-                _receivedData.Clear();
-                return result;
-            }
-
-            #if UNITY_WEBGL && !UNITY_EDITOR
-            _dataList.Clear();
-            return result;
-            #endif
-
-            HeatmapCsvWriter.WriteCsv(System.IO.Path.GetDirectoryName(Application.dataPath) + _saveDir + (_dirName == "" ? "" : $"{_dirName}/"), totalDistance, new List<string[]>(_dataList));
-            Debug.Log($"<color=orange>[HeatMap]</color> Data saved to: {System.IO.Path.GetDirectoryName(Application.dataPath) + _saveDir + (_dirName == "" ? "" : $"/{_dirName}/")}");
-            _dataList.Clear();
-            _receivedData.Clear();
 
             return result;
         }
@@ -240,6 +217,10 @@ namespace EyeMoT.Heatmap
             return totalDistance;
         }
 
+        #endregion
+
+        #region ヒートマップ生成・描画
+
         public Coroutine CreateHeatmapFromDataListAsync(List<string[]> dataList, Action<HeatmapResult> onComplete, int pointsPerFrame = 64)
         {
             return StartCoroutine(CreateHeatmapFromDataListRoutine(dataList, onComplete, pointsPerFrame));
@@ -264,8 +245,7 @@ namespace EyeMoT.Heatmap
                 if (gazeLineRT != null) ClearRT(gazeLineRT);
                 if (gazeLineTempRT != null) ClearRT(gazeLineTempRT);
 
-                if (dataList != null &&
-                    (_stampMaterial != null || _gazeLineMaterial != null))
+                if (dataList != null)
                 {
                     UpdateScreenSize();
 
@@ -383,39 +363,26 @@ namespace EyeMoT.Heatmap
         void FixedUpdate()
         {
             if(!_isStart) return;
-            if (_stampMaterial == null) return;
 
             UpdateScreenSize();
 
             Vector2 uv;
             bool inside = TryGetMouseUV(out uv);
-            bool hasBalloonScreenPosition = BalloonSpawnManager.Instance.TryGetFirstBalloonScreenPosition(out Vector2 balloonScreenPosition);
-            Balloon.Balloon balloon = BalloonSpawnManager.Instance.ActiveBalloons.Count > 0 ? BalloonSpawnManager.Instance.ActiveBalloons[0] : null;
-
-            //テスト用
-            while (_receivedData.TryDequeue(out Dictionary<FocusCalmManager.EData, string> data))
-            {
-                foreach (KeyValuePair<FocusCalmManager.EData, string> pair in data)
-                {
-                    _eegValues[(int)pair.Key] = pair.Value;
-                }
-            }
-            string[] dataSet = new string[9]{
-                (Time.time-_startTime).ToString("F2"), (_screenWidth * uv.x).ToString("F0"), (_screenHeight * uv.y).ToString("F0"),
-                hasBalloonScreenPosition ? balloonScreenPosition.x.ToString("F0") : "",
-                hasBalloonScreenPosition ? balloonScreenPosition.y.ToString("F0") : "",
-                balloon != null ? (balloon.IsHit ? "1" : "0") : "0",
-                _eegValues[0], _eegValues[1], _eegValues[2],
-                };
-            _dataList.Add(dataSet);
-            /////////
-
-            //_dataList.Add(new string[] { (Time.time-_startTime).ToString("F2"), (_screenWidth * uv.x).ToString("F0"), (_screenHeight * uv.y).ToString("F0")});
 
             if (inside)
                 DrawGazeLine(uv);
             else
-                _hasPreviousGazeLineUV = false;
+                _hasPrevGazeLineUV = false;
+
+            var time = Time.time - _startTime;
+            Vector2 gazePos = new Vector2(_screenWidth * uv.x, _screenHeight * uv.y);
+            _dataList.Add(new string[] { time.ToString("F2"), gazePos.x.ToString("F0"), gazePos.y.ToString("F0") });
+            _onDataReceived?.Invoke(new RecordSample
+            {
+                TimeStamp = time,
+                Type = Type,
+                Data = new string[] { gazePos.x.ToString("F0"), gazePos.y.ToString("F0") }
+            });
 
             if(!_isDynamicDraw) return;
 
@@ -439,19 +406,19 @@ namespace EyeMoT.Heatmap
                 return;
             }
 
-            if (!_hasPreviousGazeLineUV)
+            if (!_hasPrevGazeLineUV)
             {
-                _previousGazeLineUV = currentUV;
-                _hasPreviousGazeLineUV = true;
+                _prevGazeLineUV = currentUV;
+                _hasPrevGazeLineUV = true;
             }
 
             DrawGazeLineSegment(
                 _gazeLineRT,
                 _gazeLineTempRT,
-                _previousGazeLineUV,
+                _prevGazeLineUV,
                 currentUV);
 
-            _previousGazeLineUV = currentUV;
+            _prevGazeLineUV = currentUV;
         }
 
         private void DrawGazeLineSegment(
@@ -517,6 +484,10 @@ namespace EyeMoT.Heatmap
             Graphics.Blit(_tempRT, _heatRT);
         }
 
+        #endregion
+
+        #region 補助処理
+
         private void UpdateScreenSize()
         {
             _screenWidth = Mathf.Max(1, Screen.width);
@@ -539,7 +510,6 @@ namespace EyeMoT.Heatmap
         private void StampUV(Vector2 uv, ref Vector2 prevUV, ref bool hasPrev)
         {
             StampUVToHeatmap(uv, ref prevUV, ref hasPrev);
-            //_dataList.Add(new string[] { Time.time.ToString("F2"), (_screenWidth * uv.x).ToString("F0"), (_screenHeight * uv.y).ToString("F0")});
         }
 
         private void StampUVToHeatmap(Vector2 uv, ref Vector2 prevUV, ref bool hasPrev)
@@ -595,11 +565,6 @@ namespace EyeMoT.Heatmap
             return true;
         }
 
-        private void  LineInterpolation(Vector2 prevUV, Vector2 uv)
-        {
-            LineInterpolation(_heatRT, _tempRT, prevUV, uv);
-        }
-
         private void  LineInterpolation(RenderTexture heatRT, RenderTexture tempRT, Vector2 prevUV, Vector2 uv)
         {
             float aspect = (float)_screenWidth / _screenHeight;
@@ -623,10 +588,16 @@ namespace EyeMoT.Heatmap
             }
         }
 
-        public void ClearHeatmap()
+        #endregion
+
+        #region クリア・終了処理
+
+        public void Clear()
         {
             _pendingDecay = 0f;
-            _hasPreviousGazeLineUV = false;
+            _hasPrev = false;
+            _hasPrevGazeLineUV = false;
+            _dataList.Clear();
             ClearRT(_heatRT);
             ClearRT(_tempRT);
             if (_gazeLineRT != null) ClearRT(_gazeLineRT);
@@ -635,20 +606,21 @@ namespace EyeMoT.Heatmap
 
         void OnDestroy()
         {
+            if(_isStart)
+            {
+                StopHeatmap();
+            }
+            Clear();
             if (_heatRT != null) _heatRT.Release();
             if (_tempRT != null) _tempRT.Release();
             if (_gazeLineRT != null) _gazeLineRT.Release();
             if (_gazeLineTempRT != null) _gazeLineTempRT.Release();
         }
 
-        void OnApplicationQuit()
-        {
-            if(_isStart)
-            {
-                StopHeatmap();
-            }
-        }
+        #endregion
     }
+
+    #region 結果データ
 
     public class HeatmapResult
     {
@@ -657,4 +629,6 @@ namespace EyeMoT.Heatmap
         public RenderTexture HeatmapTexture;
         public RenderTexture GazeLineTexture;
     }
+
+    #endregion
 }

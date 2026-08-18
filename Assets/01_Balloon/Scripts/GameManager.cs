@@ -59,9 +59,6 @@ namespace EyeMoT.Balloon
             if(Input.GetKeyDown(KeyCode.R) && PlayerData.Instance.CanUseShortCut)
             {
                 if(LobbyManager.Instance.Runner.GameMode != GameMode.Single) return;
-                #if !UNITY_WEBGL || UNITY_EDITOR
-                EyeMoT.GameRecoder.GameRecoder.Instance.RecordEnd();
-                #endif
                 GameStart();
             }
         }
@@ -88,10 +85,6 @@ namespace EyeMoT.Balloon
         {
             CursorManager.Instance.SetCursorVisible(false);
             _mainTabManager.OpenPanel("Game");
-            #if !UNITY_WEBGL || UNITY_EDITOR
-            if(SettingManager.Instance.GameData.ActiveRecord == 0)
-                EyeMoT.GameRecoder.GameRecoder.Instance.RecordStart();
-            #endif
             BGMManager.Instance.Play(BalloonBGMEditor.Instance.CurrentBGM, volumeRate: 0.5f);
 
             var players = PlayerRegistry.Players
@@ -147,9 +140,6 @@ namespace EyeMoT.Balloon
         {
             _mainTabManager.OpenPanel("Result");
             CursorManager.Instance.SetCursorVisible(true);
-            #if !UNITY_WEBGL || UNITY_EDITOR
-            EyeMoT.GameRecoder.GameRecoder.Instance.RecordEnd();
-            #endif
             if(IsAnalyze)
                 ResultManager.Instance.SetAnalyze(GazeAnalyseManager.AnalyzeEnd());
             DebugManager.Instance.DebugOff();
@@ -188,10 +178,6 @@ namespace EyeMoT.Balloon
         {
             _mainTabManager.OpenPanel("Title");
             ResultManager.Instance.StopRecordHeatmap();
-            //GazeSessionResult result = GazeAnalyseManager.AnalyzeEnd();
-            #if !UNITY_WEBGL || UNITY_EDITOR
-            EyeMoT.GameRecoder.GameRecoder.Instance.RecordEnd();
-            #endif
             CursorManager.Instance.SetCursorVisible(true);
             DebugManager.Instance.DebugOff();
             BGMManager.Instance.Play(BGMPath.BALLOON_TITLE, volumeRate: 0.5f);

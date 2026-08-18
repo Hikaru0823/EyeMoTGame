@@ -88,6 +88,7 @@ public class ServerManager : MonoBehaviour
         {
             _udpServer.MessageReceived -= OnUdpMessageReceived;
             _udpServer.Error -= OnUdpError;
+            _udpServer.Stop();
         }
 
         _udpServer = server;

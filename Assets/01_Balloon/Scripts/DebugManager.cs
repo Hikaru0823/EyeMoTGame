@@ -134,10 +134,6 @@ public class DebugManager : Singleton<DebugManager>
     }
 
     #region HeatmapSettings
-    public void ClearHeatmap()
-    {
-        HeatmapRenderer.Instance?.ClearHeatmap();
-    }
 
     public void SetHeatmapRadius(string value)
     {

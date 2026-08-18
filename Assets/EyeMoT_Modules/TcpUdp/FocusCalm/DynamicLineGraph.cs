@@ -26,13 +26,16 @@ public class DynamicLineGraph : MonoBehaviour
     private Coroutine _testRoutine;
 
     private Texture2D dataTexture;
+    public Texture2D DataTexture => dataTexture;
+    private Texture2D allDataTexture;
 
     private float[] values;
-    private Color32[] texturePixels;
     private readonly List<TimeAxisLabel> _timeAxisLabels = new();
     private float _initialTime = -1;
     private int _previousSamplePosition;
     private int _nextTimeAxisLabelTime;
+    private bool _isRecording = false;
+    private List<float> _recordedData = new List<float>();
 
     private readonly struct TimeAxisLabel
     {
@@ -61,11 +64,63 @@ public class DynamicLineGraph : MonoBehaviour
         ClearGraph();
     }
 
+    public void StartRecord()
+    {
+        _isRecording = true;
+        _recordedData.Clear();
+    }
+
+    public void StopRecord()
+    {
+        _isRecording = false;
+        float[] recordedValues = _recordedData.Count > 0
+            ? _recordedData.ToArray()
+            : new float[] { _minimumValue };
+
+        if (allDataTexture != null)
+        {
+            Destroy(allDataTexture);
+        }
+
+        allDataTexture = new Texture2D(
+            recordedValues.Length,
+            1,
+            TextureFormat.RGBA32,
+            false,
+            true
+        );
+        allDataTexture.filterMode = FilterMode.Point;
+        allDataTexture.wrapMode = TextureWrapMode.Clamp;
+        UpdateTexture(allDataTexture, recordedValues);
+    }
+
+    public void ChangeTexture(bool isAllData)
+    {
+        if(isAllData)
+        {
+            if(allDataTexture != null)
+            {
+                _rawImage.texture = allDataTexture;
+            }
+        }
+        else
+        {
+            if(dataTexture != null)
+            {
+                _rawImage.texture = dataTexture;
+            }
+        }
+    }
+
     private void OnDestroy()
     {
         if (dataTexture != null)
         {
             Destroy(dataTexture);
+        }
+        if (allDataTexture != null)
+        {
+            Destroy(allDataTexture);
         }
     }
 
@@ -102,7 +157,6 @@ public class DynamicLineGraph : MonoBehaviour
     private void CreateTexture()
     {
         values = new float[_sampleCount];
-        texturePixels = new Color32[_sampleCount];
 
         dataTexture = new Texture2D(
             _sampleCount,
@@ -121,6 +175,10 @@ public class DynamicLineGraph : MonoBehaviour
 
     public void AddValue(float newValue, float time = -1)
     {
+        if(_isRecording)
+        {
+            _recordedData.Add(newValue);
+        }
         var currentTime = time < 0 ? Time.time : time;
         if(_initialTime < 0)
         {
@@ -132,7 +190,7 @@ public class DynamicLineGraph : MonoBehaviour
         ShiftAndInterpolateValues(moveDistance, newValue);
 
         UpdateTimeAxis(elapsedTime);
-        UpdateTexture();
+        UpdateTexture(dataTexture, values);
     }
 
     private void UpdateTimeAxis(float elapsedTime)
@@ -229,15 +287,19 @@ public class DynamicLineGraph : MonoBehaviour
         }
     }
 
-    private void UpdateTexture()
+    private void UpdateTexture(Texture2D targetTexture, float[] data)
     {
-        for (int i = 0; i < values.Length; i++)
+        if (targetTexture == null || data == null || data.Length == 0) return;
+
+        var texturePixels = new Color32[data.Length];
+
+        for (int i = 0; i < data.Length; i++)
         {
             // minimumValue～maximumValueを0～1へ変換
             float normalizedValue = Mathf.InverseLerp(
                 _minimumValue,
                 _maximumValue,
-                values[i]
+                data[i]
             );
 
             float adjustedValue = Mathf.Lerp(
@@ -259,8 +321,8 @@ public class DynamicLineGraph : MonoBehaviour
             );
         }
 
-        dataTexture.SetPixels32(texturePixels);
-        dataTexture.Apply(false, false);
+        targetTexture.SetPixels32(texturePixels);
+        targetTexture.Apply(false, false);
     }
 
     public void ClearGraph()
@@ -283,7 +345,7 @@ public class DynamicLineGraph : MonoBehaviour
         _previousSamplePosition = 0;
         _nextTimeAxisLabelTime = 0;
 
-        UpdateTexture();
+        UpdateTexture(dataTexture, values);
     }
 
     public void SetValueRange(float minimum, float maximum)
@@ -300,7 +362,7 @@ public class DynamicLineGraph : MonoBehaviour
         _minimumValue = minimum;
         _maximumValue = maximum;
 
-        UpdateTexture();
+        UpdateTexture(dataTexture, values);
     }
 
     string FormatTime(int totalSeconds)

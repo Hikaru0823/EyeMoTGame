@@ -62,9 +62,8 @@ namespace EyeMoT.Balloon
             
             _resultTabManager.OpenPanel("Score");
 
-            HeatmapRenderer.Instance.ClearHeatmap();
             if(PlayerObject.Local.Team != PlayerRegistry.TeamState.Spectator)
-                HeatmapRenderer.Instance.StartHeatmap("01_Balloon", true);
+                RecordManager.Instance.StartRecord(SettingManager.Instance.GameData.ActiveRecord == 0);
             _balloonCountText.text = "× 0";
             ResetHeatmapData();
             for (int i = 0; i < players.Length; i++)
@@ -78,7 +77,7 @@ namespace EyeMoT.Balloon
         public void StopRecordHeatmap()
         {
             if(PlayerObject.Local.Team != PlayerRegistry.TeamState.Spectator)
-                HeatmapRenderer.Instance.StopHeatmapRecording();
+                RecordManager.Instance.StopRecord();
         }
 
         public void SetAnalyze(GazeSessionResult result)
@@ -172,8 +171,7 @@ namespace EyeMoT.Balloon
 
             if (PlayerObject.Local.Team != PlayerRegistry.TeamState.Spectator)
             {
-                HeatmapRenderer.Instance.StopHeatmap(
-                    onComplete: SendHeatmapTextureToServer);
+                RecordManager.Instance.StopRecord();
             }
 
             var rankedPlayers = PlayerContent.Everyone

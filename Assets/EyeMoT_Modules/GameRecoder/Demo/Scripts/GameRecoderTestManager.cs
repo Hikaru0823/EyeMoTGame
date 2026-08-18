@@ -1,8 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using EyeMoT;
 using TMPro;
 using UnityEngine;
-using EyeMoT.GameRecoder;
 
 public class GameRecoderTestManager : MonoBehaviour
 {

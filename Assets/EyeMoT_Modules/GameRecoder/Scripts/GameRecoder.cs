@@ -2,23 +2,21 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using Debug = UnityEngine.Debug; // System.Diagnostics.Debug と被るのでエイリアス
 
-namespace EyeMoT.GameRecoder
+namespace EyeMoT
 {
     public class GameRecoder : MonoBehaviour
     {
         public static GameRecoder Instance { get; private set; }
-        [SerializeField] private string recorderFolderName = "YOUR_RECORD/GameRecord";
-        [SerializeField] private string ffmpegFolderName = "GameRecorder/ffmpeg.exe";
-        [SerializeField] private string outputPrefix = "GameRecoder_";
-        [SerializeField] private bool receiveDebugLog = false;
-        [SerializeField] private Canvas recordStateCanvas;
-        public bool canRecord = true;
-        private string micName = "";
-        private Process ffmpegProcess;
-        private bool isRecording = false;
+        [SerializeField] private string _recorderFolderName = "YOUR_RECORD/GameRecord";
+        [SerializeField] private string _ffmpegFolderName = "GameRecorder/ffmpeg.exe";
+        [SerializeField] private string _outputPrefix = "GameRecoder_";
+        [SerializeField] private bool _receiveDebugLog = false;
+        [SerializeField] private Canvas _recordStateCanvas;
+        public bool CanRecord = true;
+        private Process _ffmpegProcess;
+        private bool _isRecording = false;
 
         void Awake()
         {
@@ -32,43 +30,25 @@ namespace EyeMoT.GameRecoder
                 Destroy(gameObject);
                 return;
             }
-
-            // SceneManager.sceneLoaded += (scene, mode) =>
-            // {
-            //     // 自分以外にAudioListenerがあったらそのAudioListenerを削除
-            //     AudioListener[] listeners = FindObjectsOfType<AudioListener>();
-            //     foreach (AudioListener listener in listeners)
-            //     {
-            //         if (listener.gameObject != gameObject)
-            //         {
-            //             Destroy(listener);
-            //         }
-            //     }
-
-            //     // if(scene.buildIndex == 0)
-            //     // {
-            //     //     RecordEnd();
-            //     // }
-            // };
         }
 
         /// <summary>
         /// 録画開始（ddagrab 使用）
         /// </summary>
-        public void RecordStart(string dirName = "")
+        public void RecordStart(string dirName = "", string fileName = "")
         {
             #if UNITY_WEBGL && !UNITY_EDITOR
             Debug.Log($"<color=orange>[GameRecoder]</color> WebGL platform does not support GameRecoder. Initialization skipped.");
             return;
             #endif
 
-            if (isRecording)
+            if (_isRecording)
             {
                 Debug.LogWarning("<color=orange>[GameRecoder]</color> 既に録画中です。");
                 return;
             }
 
-            if (!canRecord)
+            if (!CanRecord)
             {
                 Debug.LogWarning("<color=orange>[GameRecoder]</color> 録画は無効化されています。");
                 return;
@@ -76,52 +56,14 @@ namespace EyeMoT.GameRecoder
 
             string exeFolder = GetExeFolderPath();
 
-            string recordFolder = Path.Combine(exeFolder, recorderFolderName + (string.IsNullOrEmpty(dirName) ? "" : $"/{dirName}"));
+            string recordFolder = string.IsNullOrEmpty(dirName) ? Path.Combine(exeFolder, _recorderFolderName) : dirName;
             Directory.CreateDirectory(recordFolder);
 
             string timestamp = DateTime.Now.ToString("yyyyMMddHHmm");
-            string fileName = $"{outputPrefix}_{timestamp}.mp4";
-            string outputPath = Path.Combine(recordFolder, fileName);
+            string currentfileName = string.IsNullOrEmpty(fileName) ? $"{_outputPrefix}_{timestamp}.mp4" : $"{fileName}.mp4";
+            string outputPath = Path.Combine(recordFolder, currentfileName);
 
-            string ffmpegPath;
-            string args;
-
-            #if UNITY_STANDALONE_WIN
-
-                // Windows
-                ffmpegPath = Path.Combine(
-                    Application.streamingAssetsPath,
-                    ffmpegFolderName
-                );
-
-                args =
-                    "-y " +
-                    "-filter_complex \"ddagrab=output_idx=0:framerate=30,hwdownload,format=bgra\" " +
-                    "-c:v libx264 -preset ultrafast -pix_fmt yuv420p " +
-                    $"\"{outputPath}\"";
-
-            #elif UNITY_STANDALONE_OSX
-
-                // Mac
-                ffmpegPath = "/opt/homebrew/bin/ffmpeg";
-
-                args =
-                    "-y " +
-                    "-f avfoundation " +
-                    "-framerate 20 " +
-                    "-capture_cursor 1 " +
-                    "-i \"Capture screen 0:none\" " +
-                    "-c:v h264_videotoolbox " +
-                    "-preset ultrafast " +
-                    "-pix_fmt yuv420p " +
-                    $"\"{outputPath}\"";
-
-            #else
-
-                Debug.LogError("未対応のOSです");
-                return;
-
-            #endif
+            string ffmpegPath = Path.Combine(Application.streamingAssetsPath, _ffmpegFolderName);
 
             if (!File.Exists(ffmpegPath))
             {
@@ -131,9 +73,15 @@ namespace EyeMoT.GameRecoder
 
             string windowTitle = Application.productName;
 
+            string args =
+                "-y " +
+        "-filter_complex \"ddagrab=output_idx=0:framerate=30,hwdownload,format=bgra\" " +
+        "-c:v libx264 -preset ultrafast -pix_fmt yuv420p " +
+        $"\"{outputPath}\"";
+
             try
             {
-                ffmpegProcess = new Process();
+                _ffmpegProcess = new Process();
                 ProcessStartInfo StartInfo = new ProcessStartInfo()
                 {
                     FileName = ffmpegPath,
@@ -144,45 +92,45 @@ namespace EyeMoT.GameRecoder
                     RedirectStandardOutput = true,
                     RedirectStandardInput = true
                 };
-                ffmpegProcess.StartInfo = StartInfo;
+                _ffmpegProcess.StartInfo = StartInfo;
 
-                if(receiveDebugLog)
+                if(_receiveDebugLog)
                 {
-                    ffmpegProcess.ErrorDataReceived += (sender, e) =>
+                    _ffmpegProcess.ErrorDataReceived += (sender, e) =>
                     {
                         if (!string.IsNullOrEmpty(e.Data))
                             Debug.Log($"<color=orange>[GameRecoder]</color> [ffmpeg stderr] {e.Data}");
                     };
-                    ffmpegProcess.OutputDataReceived += (sender, e) =>
+                    _ffmpegProcess.OutputDataReceived += (sender, e) =>
                     {
                         if (!string.IsNullOrEmpty(e.Data))
                             Debug.Log($"<color=orange>[GameRecoder]</color> [ffmpeg stdout] {e.Data}");
                     };
                 }
 
-                bool started = ffmpegProcess.Start();
-                ffmpegProcess.BeginErrorReadLine();
-                ffmpegProcess.BeginOutputReadLine();
+                bool started = _ffmpegProcess.Start();
+                _ffmpegProcess.BeginErrorReadLine();
+                _ffmpegProcess.BeginOutputReadLine();
 
                 // 起動直後に即終了していたら失敗とみなす
                 System.Threading.Thread.Sleep(100);
-                if (ffmpegProcess.HasExited)
+                if (_ffmpegProcess.HasExited)
                 {
                     Debug.LogError("<color=orange>[GameRecoder]</color> ffmpeg がすぐに終了しました（ddagrab 非対応 or エラーの可能性）。");
-                    ffmpegProcess.Dispose();
-                    ffmpegProcess = null;
+                    _ffmpegProcess.Dispose();
+                    _ffmpegProcess = null;
                     return;
                 }
 
-                isRecording = true;
+                _isRecording = true;
                 Debug.Log($"<color=orange>[GameRecoder]</color> 録画開始 {outputPath}");
-                recordStateCanvas.enabled = true;
+                _recordStateCanvas.enabled = true;
             }
             catch (Exception ex)
             {
                 Debug.LogError($"<color=orange>[GameRecoder]</color> ffmpeg 起動時に例外が発生しました: {ex.Message}");
-                ffmpegProcess?.Dispose();
-                ffmpegProcess = null;
+                _ffmpegProcess?.Dispose();
+                _ffmpegProcess = null;
             }
         }
 
@@ -191,18 +139,18 @@ namespace EyeMoT.GameRecoder
         /// </summary>
         public void RecordEnd()
         {
-            if (!isRecording) return;
-            recordStateCanvas.enabled = false;
+            if (!_isRecording) return;
+            _recordStateCanvas.enabled = false;
             try
             {
-                if (ffmpegProcess != null && !ffmpegProcess.HasExited)
+                if (_ffmpegProcess != null && !_ffmpegProcess.HasExited)
                 {
                     // ★ 正常終了：q を送る
-                    ffmpegProcess.StandardInput.WriteLine("q");
-                    ffmpegProcess.StandardInput.Flush();
+                    _ffmpegProcess.StandardInput.WriteLine("q");
+                    _ffmpegProcess.StandardInput.Flush();
 
                     // moov が書かれるまで待つ
-                    ffmpegProcess.WaitForExit(2000); // 最大 2 秒待機
+                    _ffmpegProcess.WaitForExit(2000); // 最大 2 秒待機
                 }
             }
             catch (Exception e)
@@ -211,9 +159,9 @@ namespace EyeMoT.GameRecoder
             }
             finally
             {
-                ffmpegProcess?.Dispose();
-                ffmpegProcess = null;
-                isRecording = false;
+                _ffmpegProcess?.Dispose();
+                _ffmpegProcess = null;
+                _isRecording = false;
 
                 Debug.Log("<color=orange>[GameRecoder]</color> 録画正常終了");
             }
@@ -241,28 +189,10 @@ namespace EyeMoT.GameRecoder
         private void OnApplicationQuit()
         {
             // アプリ終了時に録画が残っていたら止める
-            if (isRecording)
+            if (_isRecording)
             {
                 RecordEnd();
             }
         }
-
-        /// <summary>
-        /// マイクが未設定の場合、接続されているマイクの一つを割り当てる
-        /// </summary>
-        /// <returns>マイクが存在すればtrue、なければfalse</returns>
-        // private string GetDefaultMic()
-        // {
-        //     if (string.IsNullOrEmpty(micName))
-        //     {
-        //         string[] devices = Microphone.devices;
-        //         if (devices.Length > 0)
-        //         {
-        //             return devices[1];
-        //         }
-        //         return "";
-        //     }
-        //     return micName;
-        // }
     }
 }
