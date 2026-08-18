@@ -212,8 +212,14 @@ MonoBehaviour:
   _shakeOnHit: 1
   _shakeStrength: 0.03
   _shakeSpeed: 40
+  _hitScaleAmount: 0.3
+  _hitScaleSpeed: 2
+  _spawnAnimationDuration: 0.5
+  _IsHit:
+    _value: 0
   _NetworkedColor: {r: 0, g: 0, b: 0, a: 0}
   IsPreview: 0
+  _EnableSpawnAnimation: 0
 --- !u!136 &4116788698675896300
 CapsuleCollider:
   m_ObjectHideFlags: 0

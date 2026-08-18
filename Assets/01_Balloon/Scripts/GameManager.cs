@@ -123,7 +123,7 @@ namespace EyeMoT.Balloon
 
             Timer.Instance.StartTimer(LobbyManager.Instance.Runner.Tick, SettingManager.Instance.GameData.GameTime);
 
-            var patern = IsAnalyze ? CurrentMode : SettingManager.Instance.GameData.BalloonGeneratePatern;
+            var patern = /*IsAnalyze ? CurrentMode : */SettingManager.Instance.GameData.BalloonGeneratePatern;
             var maxBalloons = IsAnalyze ? 1 : SettingManager.Instance.GameData.BalloonAmount;
             BalloonSpawnManager.Instance.SpawnInitialBalloons(patern, maxBalloons);
 

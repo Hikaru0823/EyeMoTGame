@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using EyeMoT.Fusion;
@@ -31,6 +32,7 @@ namespace EyeMoT.Balloon
         [SerializeField] private float _balloonSpeed = 2f;
         [SerializeField] private float _offsetFromVolumeEdge = 1.1f;
         [SerializeField, Min(0f)] private float _spawnInsetFromVolumeEdge = 0.8f;
+        [SerializeField] private float _spawnVolumeScreenRatio = 0.9f;
         [SerializeField] private bool _visibleCollision = false;
 
         public List<Color> balloonColorHistory = new List<Color>();
@@ -39,6 +41,15 @@ namespace EyeMoT.Balloon
         public Action OnBalloonDestroyed;
         private BalloonSpawnManager.GenerationPatern _currentPatern;
         private int _maxBalloons;
+        private int _generateSideIdx = 0;
+        private int _lastScreenWidth;
+        private int _lastScreenHeight;
+        private Coroutine _spawnRoutine;
+
+        private void Start()
+        {
+            FitSpawnVolumeToCamera();
+        }
 
         public bool TryGetFirstBalloonScreenPosition(out Vector2 screenPosition)
         {
@@ -66,6 +77,9 @@ namespace EyeMoT.Balloon
 
         void Update()
         {
+            if (Screen.width != _lastScreenWidth || Screen.height != _lastScreenHeight)
+                FitSpawnVolumeToCamera();
+
             if (Input.GetKeyDown(KeyCode.D) && PlayerData.Instance.CanUseShortCut)
             {
                 _visibleCollision = !_visibleCollision;
@@ -76,8 +90,72 @@ namespace EyeMoT.Balloon
             }
         }
 
+        private void FitSpawnVolumeToCamera()
+        {
+            _lastScreenWidth = Screen.width;
+            _lastScreenHeight = Screen.height;
+
+            Camera targetCamera = Camera.main;
+            if (targetCamera == null || _spawnVolume == null)
+                return;
+
+            if (!_spawnVolume.TryGetComponent<BoxCollider>(out var boxCollider))
+            {
+                Debug.LogWarning($"{_spawnVolume.name} has no BoxCollider. Camera fitting was skipped.");
+                return;
+            }
+
+            Transform volumeTransform = _spawnVolume.transform;
+            Plane volumePlane = new Plane(volumeTransform.forward, volumeTransform.position);
+            Vector3[] viewportCorners =
+            {
+                new Vector3(0f, 0f, 0f),
+                new Vector3(0f, 1f, 0f),
+                new Vector3(1f, 0f, 0f),
+                new Vector3(1f, 1f, 0f)
+            };
+
+            float minX = float.PositiveInfinity;
+            float maxX = float.NegativeInfinity;
+            float minY = float.PositiveInfinity;
+            float maxY = float.NegativeInfinity;
+
+            foreach (Vector3 viewportCorner in viewportCorners)
+            {
+                Ray ray = targetCamera.ViewportPointToRay(viewportCorner);
+                if (!volumePlane.Raycast(ray, out float distance))
+                    return;
+
+                Vector3 offset = ray.GetPoint(distance) - volumeTransform.position;
+                float x = Vector3.Dot(offset, volumeTransform.right);
+                float y = Vector3.Dot(offset, volumeTransform.up);
+                minX = Mathf.Min(minX, x);
+                maxX = Mathf.Max(maxX, x);
+                minY = Mathf.Min(minY, y);
+                maxY = Mathf.Max(maxY, y);
+            }
+
+            float parentScaleX = volumeTransform.parent == null
+                ? 1f
+                : volumeTransform.parent.lossyScale.x;
+            float parentScaleY = volumeTransform.parent == null
+                ? 1f
+                : volumeTransform.parent.lossyScale.y;
+            float localWidth = Mathf.Abs(boxCollider.size.x * parentScaleX);
+            float localHeight = Mathf.Abs(boxCollider.size.y * parentScaleY);
+
+            if (localWidth <= Mathf.Epsilon || localHeight <= Mathf.Epsilon)
+                return;
+
+            Vector3 scale = volumeTransform.localScale;
+            scale.x = (maxX - minX) * _spawnVolumeScreenRatio / localWidth;
+            scale.y = (maxY - minY) * _spawnVolumeScreenRatio / localHeight;
+            volumeTransform.localScale = scale;
+        }
+
         void LateUpdate()
         {
+            if(GameManager.Instance.IsAnalyze) return;
             if (GameManager.Instance.IsStart && ActiveBalloons.Count < _maxBalloons)
             {
                 SpawnBalloonPatern(_currentPatern);
@@ -88,8 +166,26 @@ namespace EyeMoT.Balloon
         {
             _currentPatern = patern;
             _maxBalloons = maxBalloons;
-            for(int i = 0; i < _maxBalloons; i++)
+            _spawnVolumeScreenRatio = GameManager.Instance.IsAnalyze ? 1 : 1.3f;
+            FitSpawnVolumeToCamera();
+            if(GameManager.Instance.IsAnalyze)
+            {
+                _spawnRoutine = StartCoroutine(SpawnRoutin(patern, SettingManager.Instance.GameData.GenerarteInterval));
+            }
+            else
+            {
+                for(int i = 0; i < _maxBalloons; i++)
                 SpawnBalloonPatern(patern);
+            }
+        }
+
+        private IEnumerator SpawnRoutin(GenerationPatern patern, float interval)
+        {
+            while(true)
+            {
+                SpawnBalloonPatern(patern);
+                yield return new WaitForSeconds(interval);
+            }
         }
 
         public Balloon SpawnPreviewBalloon(Vector3 spawnPosition, Vector3 spawnRotation, bool randomColor = false)
@@ -108,12 +204,13 @@ namespace EyeMoT.Balloon
             }
             ActiveBalloons.Clear();
             balloonColorHistory.Clear();
+            StopCoroutine(_spawnRoutine);
         }
 
         private void SpawnBalloonPatern(GenerationPatern patern)
         {
             if(!GameManager.Instance.IsStart) return;
-            BalloonSpawnData spawnData = GetBalloonSpawnData();
+            BalloonSpawnData spawnData = GameManager.Instance.IsAnalyze ? GetBalloonSpawnDataFixed((Side)(_generateSideIdx%4)) : GetBalloonSpawnData();
             var randomRotate = Quaternion.Euler(0, 0, UnityEngine.Random.Range(-90f, 90f));
             var randomColor = new Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value);
             switch(patern)
@@ -122,7 +219,8 @@ namespace EyeMoT.Balloon
                     Balloon newBalloon = LobbyManager.Instance.Runner.Spawn(_balloonPrefab, spawnData.Position, randomRotate, onBeforeSpawned: (runner, obj) => {
                         obj.GetComponent<Balloon>().NetworkedColor = randomColor;
                     });
-                    newBalloon.StartMove(spawnData.MoveTargetDirection, GameManager.Instance.IsAnalyze ? 0.2f : _balloonSpeed);
+                    newBalloon.StartMove(spawnData.MoveTargetDirection, 
+                        GameManager.Instance.IsAnalyze ? (_generateSideIdx % 2 == 0 ? 1.05f : 0.75f) : _balloonSpeed);
                     newBalloon.VisibleCollision(_visibleCollision);
                     ActiveBalloons.Add(newBalloon);
                     balloonColorHistory.Add(randomColor);
@@ -138,6 +236,7 @@ namespace EyeMoT.Balloon
                     balloonColorHistory.Add(randomColor);
                     break;
             }
+            _generateSideIdx ++;
         }
 
 
@@ -158,7 +257,7 @@ namespace EyeMoT.Balloon
                 spawnSide = (Side)UnityEngine.Random.Range(0, 4);
 
             Bounds volumeBounds = GetVolumeBounds(_spawnVolume);
-            float spawnRangeRatio = GameManager.Instance.IsAnalyze ? 4f / 5f : 1f;
+            float spawnRangeRatio = /*GameManager.Instance.IsAnalyze ? 4f / 5f : */1f;
             Vector3 spawnPosition = GetSpawnPosition(
                 spawnSide.Value,
                 volumeBounds,
@@ -179,6 +278,42 @@ namespace EyeMoT.Balloon
             Vector3 moveTargetDirection = (targetPosition - spawnPosition).normalized;
 
             return new BalloonSpawnData(spawnPosition, moveTargetDirection);
+        }
+
+        private BalloonSpawnData GetBalloonSpawnDataFixed(Side? spawnSide = null)
+        {
+            Side actualSpawnSide = spawnSide ?? (Side)UnityEngine.Random.Range(0, 4);
+            Side targetSide = (Side)(((int)actualSpawnSide + 2) % 4);
+            Bounds volumeBounds = GetVolumeBounds(_spawnVolume);
+
+            Vector3 spawnPosition = GetSideCenter(actualSpawnSide, volumeBounds);
+            Vector3 targetPosition = GetSideCenter(targetSide, volumeBounds);
+            Vector3 moveTargetDirection = (targetPosition - spawnPosition).normalized;
+
+            return new BalloonSpawnData(spawnPosition, moveTargetDirection);
+        }
+
+        private Vector3 GetSideCenter(Side side, Bounds bounds)
+        {
+            Vector3 position = bounds.center;
+
+            switch (side)
+            {
+                case Side.Left:
+                    position.x = bounds.min.x ;
+                    break;
+                case Side.Up:
+                    position.y = bounds.max.y;
+                    break;
+                case Side.Right:
+                    position.x = bounds.max.x ;
+                    break;
+                case Side.Down:
+                    position.y = bounds.min.y ;
+                    break;
+            }
+
+            return position;
         }
 
         private Side GetRandomSideExcept(Side excludeSide)
@@ -353,7 +488,7 @@ namespace EyeMoT.Balloon
         {
             if(!LobbyManager.Instance.Runner.IsServer) return;
 
-            balloon.GetComponent<GazeAnalyseTarget>()?.Unregister(_currentPatern == GenerationPatern.Float ? GazeTargetEndReason.Removed : GazeTargetEndReason.Destroyed);
+            balloon.GetComponent<GazeAnalyseTarget>()?.Unregister(_currentPatern == GenerationPatern.Float && !GameManager.Instance.IsAnalyze ? GazeTargetEndReason.Removed : GazeTargetEndReason.Destroyed);
 
             LobbyManager.Instance.Runner.Despawn(balloon.Object);
             ActiveBalloons.Remove(balloon);
@@ -361,7 +496,7 @@ namespace EyeMoT.Balloon
 
         private enum Side
         {
-            Left, Up, Right, Down
+            Left=0, Up, Right, Down
         }
 
         public enum GenerationPatern

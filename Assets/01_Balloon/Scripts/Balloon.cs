@@ -26,12 +26,16 @@ namespace EyeMoT.Balloon
         [SerializeField] private bool _shakeOnHit = true;
         [SerializeField] private float _shakeStrength = 0.2f;
         [SerializeField] private float _shakeSpeed = 40f;
+        [SerializeField] private bool _scaleOnHit = false;
+        [SerializeField, Range(0f, 0.5f)] private float _hitScaleAmount = 0.1f;
+        [SerializeField, Min(0f)] private float _hitScaleSpeed = 2f;
         [SerializeField, Min(0f)] private float _spawnAnimationDuration = 0.5f;
 
         private Action<Balloon> _onLifeTimeExpired;
         private Vector3 _moveTargetDirection;
         private float _moveSpeed;
         private Vector3 _balloonVisualDefaultLocalPosition;
+        private bool _wasHitLastRender;
         private readonly HashSet<PlayerRef> _hitSources = new HashSet<PlayerRef>();
 
         [Networked] public NetworkBool IsHit { get; set; }
@@ -55,6 +59,7 @@ namespace EyeMoT.Balloon
         // ネットワーク上に生成されたときの初期化処理。
         public override void Spawned()
         {
+            _scaleOnHit = GameManager.Instance.IsAnalyze;
             _hitSources.Clear();
             InitializeComponents();
             UpdateData();
@@ -79,7 +84,7 @@ namespace EyeMoT.Balloon
         // ネットワーク更新ごとにヒット時間と寿命を進める。
         public override void FixedUpdateNetwork()
         {
-            TickBalloon(Runner.DeltaTime, Object.HasStateAuthority);
+            TickBalloon(Runner.DeltaTime, Object.HasStateAuthority && !GameManager.Instance.IsAnalyze);
         }
 
         // 描画更新ごとにヒット中の見た目の揺れを反映する。
@@ -92,11 +97,29 @@ namespace EyeMoT.Balloon
             if (!IsHit)
             {
                 ApplyShakeOffset(Vector3.zero);
+
+                if (_wasHitLastRender)
+                    ApplyHitScale(1f);
+
+                _wasHitLastRender = false;
                 return;
             }
 
             // HitTime は Networked なので全端末でだいたい揃う
             ApplyShakeOffset(GetShakeOffset(HitTime));
+            if (_scaleOnHit)
+            {
+                float scaleMultiplier = 1f + Mathf.Sin(
+                    HitTime * _hitScaleSpeed * Mathf.PI * 2f
+                ) * _hitScaleAmount;
+                ApplyHitScale(scaleMultiplier);
+            }
+            else
+            {
+                ApplyHitScale(1f);
+            }
+
+            _wasHitLastRender = true;
         }
 
         // ヒット中の経過時間を加算し、寿命に達したらバルーンを破壊する。
@@ -330,6 +353,17 @@ namespace EyeMoT.Balloon
                 Mathf.PerlinNoise(0f, time) - 0.5f,
                 Mathf.PerlinNoise(time, time) - 0.5f
             ) * (_shakeStrength * 2f);
+        }
+
+        // ヒット中の拡縮率を、設定されている通常サイズに対して適用する。
+        private void ApplyHitScale(float multiplier)
+        {
+            if (_balloonVisual == null)
+                return;
+
+            Vector3 targetScale =
+                _defaultVisualScale * SettingManager.Instance.BalloonData.VisualScale;
+            _balloonVisual.transform.localScale = targetScale * multiplier;
         }
 
         IEnumerator SpawnAnimation()

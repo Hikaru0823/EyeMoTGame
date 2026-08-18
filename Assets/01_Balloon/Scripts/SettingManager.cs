@@ -29,6 +29,7 @@ namespace EyeMoT.Balloon
                 _gameDataSelecter.BGColor.Initialize((int)GameData.BGColor);
                 _gameDataSelecter.IsSwitchMode.Initialize(GameData.IsSwitchMode);
                 _gameDataSelecter.ActiveRecord.Initialize(GameData.ActiveRecord);
+                _gameDataSelecter.GenerarteInterval.Initialize(Array.FindIndex(_gameDataSelecter.GenerarteInterval.GetItems(), x => x.Contains(GameData.GenerarteInterval.ToString() + " 秒")));
 
                 _balloonDataSelecter.CollisionScale.Initialize(Array.FindIndex(_balloonDataSelecter.CollisionScale.GetItems(), x => x.Contains(BalloonData.CollisionScale.ToString("F1") + " 倍")) );
                 _balloonDataSelecter.VisualScale.Initialize(Array.FindIndex(_balloonDataSelecter.VisualScale.GetItems(), x => x.Contains(BalloonData.VisualScale.ToString("F1") + " 倍")) );
@@ -44,6 +45,7 @@ namespace EyeMoT.Balloon
                 _gameDataSelecter.BGColor.Initialize(-1);
                 _gameDataSelecter.IsSwitchMode.Initialize(-1);
                 _gameDataSelecter.ActiveRecord.Initialize(-1);
+                _gameDataSelecter.GenerarteInterval.Initialize(-1);
 
                 _balloonDataSelecter.CollisionScale.Initialize(-1);
                 _balloonDataSelecter.VisualScale.Initialize(-1);
@@ -71,24 +73,6 @@ namespace EyeMoT.Balloon
             //Debug.Log(json);
         }
 
-        private static string FormatSaveJson(string json, SaveData saveData)
-        {
-            json = ReplaceJsonFloat(json, nameof(Instance.GameData.GameTime), saveData.GameData.GameTime, "0.#");
-            json = ReplaceJsonFloat(json, nameof(Instance.BalloonData.CollisionScale), saveData.BalloonData.CollisionScale, "0.#");
-            json = ReplaceJsonFloat(json, nameof(Instance.BalloonData.VisualScale), saveData.BalloonData.VisualScale, "0.#");
-            json = ReplaceJsonFloat(json, nameof(Instance.BalloonData.LifeTime), saveData.BalloonData.LifeTime, "0.#");
-            return json;
-        }
-
-        private static string ReplaceJsonFloat(string json, string key, float value, string format)
-        {
-            string formattedValue = value.ToString(format, CultureInfo.InvariantCulture);
-            return Regex.Replace(
-                json,
-                $"(\"{Regex.Escape(key)}\"\\s*:\\s*)[-+]?\\d+(?:\\.\\d+)?(?:[eE][-+]?\\d+)?",
-                match => match.Groups[1].Value + formattedValue);
-        }
-
         public static SaveData Load()
         {
             if (!ES3.KeyExists(SaveKeys.BalloonGameData))
@@ -111,6 +95,7 @@ namespace EyeMoT.Balloon
         public void SetBGColor(string value) => GameData.BGColor = (PreviewManager.BGColor)Enum.Parse(typeof(PreviewManager.BGColor), value);
         public void SetIsSwitchMode(bool value) => GameData.IsSwitchMode = value ? 0 : 1;
         public void SetActiveRecord(bool value) => GameData.ActiveRecord = value ? 0 : 1;
+        public void SetGenerateInterval(string value) => GameData.GenerarteInterval = float.Parse(value.Replace("秒", ""));
 
         public void SetCollisionScale(string value) => BalloonData.CollisionScale = float.Parse(value.Replace("倍", ""));
         public void SetVisualScale(string value) => BalloonData.VisualScale = float.Parse(value.Replace("倍", ""));
@@ -130,6 +115,7 @@ namespace EyeMoT.Balloon
         public PreviewManager.BGColor BGColor = PreviewManager.BGColor.Default;
         public int IsSwitchMode;
         public int ActiveRecord;
+        public float GenerarteInterval;
     }
 
     [Serializable]
@@ -141,6 +127,7 @@ namespace EyeMoT.Balloon
         public SelecterUI BGColor;
         public SelecterUI IsSwitchMode;
         public SelecterUI ActiveRecord;
+        public SelecterUI GenerarteInterval;
     }
 
     [Serializable]

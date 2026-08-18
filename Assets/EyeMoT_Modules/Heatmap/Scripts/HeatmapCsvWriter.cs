@@ -10,7 +10,7 @@ namespace EyeMoT.Heatmap
         /// </summary>
         /// <param name="path"></param>
         /// <param name="uvList"></param>
-        public static void WriteCsv(string path, float totalDistance, List<string[]> data)
+        public static void WriteCsv(string path, float totalDistance, List<string[]> data, string[] addData = null)
         {
             #if UNITY_WEBGL && !UNITY_EDITOR
             return;
@@ -24,9 +24,9 @@ namespace EyeMoT.Heatmap
             var writeData = new List<string[]>();
             writeData.Add(new string[] { "#Date", "TotalDistance" });
             writeData.Add(new string[] { date.ToString("yyyy/MM/dd HH:mm:ss"), totalDistance.ToString("F1") });
-            writeData.Add(new string[] { "#Screen_X", "Screen_Y", "GazeDataCount" });
+            writeData.Add(new string[] { "#Screen_X", "Screen_Y", "GazeDataCount", "GenetatePatern", "GenetateInterval" });
             writeData.Add(new string[] { Screen.width.ToString(), Screen.height.ToString(), data.Count.ToString() });
-            writeData.Add(new string[] { "#GameTime", "Gaze_X", "Gaze_Y", "Balloon_X", "Balloon_Y", "Attention", "Meditation", "Alpha", "Beta", "Delta", "Theta", "Gamma"});
+            writeData.Add(new string[] { "#GameTime", "Gaze_X", "Gaze_Y", "Balloon_X", "Balloon_Y", "HitState", "Attention", "Meditation", "Alpha", "Beta", "Delta", "Theta", "Gamma"});
             writeData.AddRange(data);
             csvManager.CSVWrite(writeData, path + Application.productName + "_" + date.ToString("yyyyMMddHHmmss") + ".csv", isAppend: false);
 

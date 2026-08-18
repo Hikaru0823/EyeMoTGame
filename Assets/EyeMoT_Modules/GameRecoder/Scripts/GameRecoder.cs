@@ -83,7 +83,45 @@ namespace EyeMoT.GameRecoder
             string fileName = $"{outputPrefix}_{timestamp}.mp4";
             string outputPath = Path.Combine(recordFolder, fileName);
 
-            string ffmpegPath = Path.Combine(Application.streamingAssetsPath, ffmpegFolderName);
+            string ffmpegPath;
+            string args;
+
+            #if UNITY_STANDALONE_WIN
+
+                // Windows
+                ffmpegPath = Path.Combine(
+                    Application.streamingAssetsPath,
+                    ffmpegFolderName
+                );
+
+                args =
+                    "-y " +
+                    "-filter_complex \"ddagrab=output_idx=0:framerate=30,hwdownload,format=bgra\" " +
+                    "-c:v libx264 -preset ultrafast -pix_fmt yuv420p " +
+                    $"\"{outputPath}\"";
+
+            #elif UNITY_STANDALONE_OSX
+
+                // Mac
+                ffmpegPath = "/opt/homebrew/bin/ffmpeg";
+
+                args =
+                    "-y " +
+                    "-f avfoundation " +
+                    "-framerate 20 " +
+                    "-capture_cursor 1 " +
+                    "-i \"Capture screen 0:none\" " +
+                    "-c:v h264_videotoolbox " +
+                    "-preset ultrafast " +
+                    "-pix_fmt yuv420p " +
+                    $"\"{outputPath}\"";
+
+            #else
+
+                Debug.LogError("未対応のOSです");
+                return;
+
+            #endif
 
             if (!File.Exists(ffmpegPath))
             {
@@ -92,24 +130,6 @@ namespace EyeMoT.GameRecoder
             }
 
             string windowTitle = Application.productName;
-
-            // micName = GetDefaultMic();
-            // string audioPart = "";
-            // string mapPart   = "-map \"[v]\""; // 映像だけ
-
-            // // if (!string.IsNullOrEmpty(micName))
-            // // {
-            // //     audioPart =
-            // //         $"-f dshow -i audio=\"{micName}\" ";
-            // //     mapPart =
-            // //         "-map \"[v]\" -map 1:a ";
-            // // }
-
-            string args =
-                "-y " +
-        "-filter_complex \"ddagrab=output_idx=0:framerate=30,hwdownload,format=bgra\" " +
-        "-c:v libx264 -preset ultrafast -pix_fmt yuv420p " +
-        $"\"{outputPath}\"";
 
             try
             {

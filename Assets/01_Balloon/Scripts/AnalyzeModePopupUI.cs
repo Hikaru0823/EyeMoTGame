@@ -23,7 +23,7 @@ namespace EyeMoT.Fusion
 
         public static void OnVisible(string title, string description)
         {
-            Instance.selecterUI.OnButtonClicked(1);
+            //Instance.selecterUI.OnButtonClicked(1);
             Instance.noButton.gameObject.SetActive(true);
             Instance.title.text = title;
             Instance.description.text = description;

@@ -348,7 +348,13 @@ namespace EyeMoT.Balloon
                 return;
 
             _isBeamSoundPlaying = true;
-            SEManager.Instance.Play(SEPath.BEAM);
+            SEManager.Instance.Play(SEPath.BEAM, callback:OnBeamSoundStop);
+        }
+
+        private void OnBeamSoundStop()
+        {
+            if(_isBeamSoundPlaying)
+                SEManager.Instance.Play(SEPath.BEAM, callback:OnBeamSoundStop);
         }
 
         private void StopBeamSound()
