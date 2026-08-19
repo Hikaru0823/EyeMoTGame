@@ -130,8 +130,8 @@ namespace EyeMoT
                 }
             }
 
-            FillEmptyValuesWithLatest(mergedData);
             SortRowsByGameTime(mergedData);
+            FillEmptyValuesWithLatest(mergedData);
             return mergedData;
         }
 

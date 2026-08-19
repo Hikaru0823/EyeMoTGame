@@ -238,7 +238,8 @@ namespace EyeMoT.Balloon
         private Balloon SpawnAnalyzeBalloon(Vector3 spawnPosition)
         {
             var randomRotate = Quaternion.Euler(0, 0, UnityEngine.Random.Range(-90f, 90f));
-            var randomColor = new Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value);
+            //var randomColor = new Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value);
+            var randomColor = Color.red;
             Balloon newBalloon = LobbyManager.Instance.Runner.Spawn(_balloonPrefab, spawnPosition, randomRotate, onBeforeSpawned: (runner, obj) => {
                 Balloon balloon = obj.GetComponent<Balloon>();
                 balloon.NetworkedColor = randomColor;

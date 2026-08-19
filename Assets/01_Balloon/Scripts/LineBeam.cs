@@ -4,6 +4,7 @@ using EyeMoT.Fusion;
 using Fusion;
 using KanKikuchi.AudioManager;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace EyeMoT.Balloon
 {
@@ -115,6 +116,7 @@ namespace EyeMoT.Balloon
             if (EnsureLineRendererPositionCount())
                 _lineRenderer.enabled = false;
 
+            _targetImage.GetComponent<SpriteRenderer>().enabled = !GameManager.Instance.IsAnalyze;
             _targetImage.transform.localScale = Vector3.one * SettingManager.Instance.BalloonData.VisualScale * _targetImageScaleOnMiss;
             var teamColor = PlayerRegistry.TeamColor[(int)PlayerRegistry.GetPlayer(Object.InputAuthority).Team];
             _targetImage.GetComponent<SpriteRenderer>().color = Object.HasInputAuthority ? teamColor : new Color(teamColor.r, teamColor.g, teamColor.b, _noLocalAlpha);
