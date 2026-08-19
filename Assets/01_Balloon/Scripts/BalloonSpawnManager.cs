@@ -45,9 +45,9 @@ namespace EyeMoT.Balloon
         private int _lastScreenWidth;
         private int _lastScreenHeight;
         private Coroutine? _spawnRoutine;
-        private const float AnalyzeInitialWaitSeconds = 10f;
-        private const float AnalyzeMoveSeconds = 5f;
-        private const float AnalyzeCornerWaitSeconds = 5f;
+        private float _analyzeInitialWaitSeconds = 10f;
+        private float _analyzeMoveSeconds = 5f;
+        private float _analyzeGenerateInterval = 5f;
         public string[] _csvType = new string[]{"Balloon_X","Balloon_Y","Balloon_Hit"};
         private float _startTime = 0;
 
@@ -160,7 +160,7 @@ namespace EyeMoT.Balloon
 
         void LateUpdate()
         {
-            if(ActiveBalloons.Count > 0)
+            if(ActiveBalloons.Count > 0 && ActiveBalloons[0] != null)
             {
                 var balloonPos = Camera.main.WorldToScreenPoint(ActiveBalloons[0].transform.position);
                 int isHit = ActiveBalloons[0].IsHit ? 1 : 0;
@@ -185,6 +185,9 @@ namespace EyeMoT.Balloon
             _maxBalloons = maxBalloons;
             _generateSideIdx = 0;
             _spawnVolumeScreenRatio = GameManager.Instance.IsAnalyze ? 1 : 1.3f;
+            _analyzeInitialWaitSeconds = SettingManager.Instance.GameData.InitialWaitSeconds;
+            _analyzeMoveSeconds = SettingManager.Instance.GameData.MoveSeconds;
+            _analyzeGenerateInterval = SettingManager.Instance.GameData.GenerarteInterval;
             FitSpawnVolumeToCamera();
             if (_spawnRoutine != null)
             {
@@ -205,7 +208,7 @@ namespace EyeMoT.Balloon
 
         private IEnumerator AnalyzeSpawnRoutine()
         {
-            yield return new WaitForSeconds(AnalyzeInitialWaitSeconds);
+            yield return new WaitForSeconds(_analyzeInitialWaitSeconds);
 
             while(true)
             {
@@ -215,18 +218,18 @@ namespace EyeMoT.Balloon
                 Balloon newBalloon = SpawnAnalyzeBalloon(volumeBounds.center);
                 Vector3 targetPosition = GetAnalyzeCornerPosition(volumeBounds, _generateSideIdx);
                 float moveDistance = Vector3.Distance(newBalloon.transform.position, targetPosition);
-                float moveSpeed = moveDistance / AnalyzeMoveSeconds;
+                float moveSpeed = moveDistance / _analyzeMoveSeconds;
 
                 newBalloon.StartMove(
                     (targetPosition - newBalloon.transform.position).normalized,
                     moveSpeed
                 );
 
-                yield return new WaitForSeconds(AnalyzeMoveSeconds);
+                yield return new WaitForSeconds(_analyzeMoveSeconds);
 
                 StopAnalyzeBalloonAtTarget(newBalloon, targetPosition);
 
-                yield return new WaitForSeconds(AnalyzeCornerWaitSeconds);
+                yield return new WaitForSeconds(_analyzeGenerateInterval);
 
                 _generateSideIdx++;
             }

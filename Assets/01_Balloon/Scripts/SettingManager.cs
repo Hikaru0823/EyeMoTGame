@@ -29,6 +29,8 @@ namespace EyeMoT.Balloon
                 _gameDataSelecter.BGColor.Initialize((int)GameData.BGColor);
                 _gameDataSelecter.IsSwitchMode.Initialize(GameData.IsSwitchMode);
                 _gameDataSelecter.ActiveRecord.Initialize(GameData.ActiveRecord);
+                _gameDataSelecter.InitialWaitSeconds.Initialize(Array.FindIndex(_gameDataSelecter.InitialWaitSeconds.GetItems(), x => x.Contains(GameData.InitialWaitSeconds.ToString() + " 秒")));
+                _gameDataSelecter.MoveSeconds.Initialize(Array.FindIndex(_gameDataSelecter.MoveSeconds.GetItems(), x => x.Contains(GameData.MoveSeconds.ToString() + " 秒")));
                 _gameDataSelecter.GenerarteInterval.Initialize(Array.FindIndex(_gameDataSelecter.GenerarteInterval.GetItems(), x => x.Contains(GameData.GenerarteInterval.ToString() + " 秒")));
 
                 _balloonDataSelecter.CollisionScale.Initialize(Array.FindIndex(_balloonDataSelecter.CollisionScale.GetItems(), x => x.Contains(BalloonData.CollisionScale.ToString("F1") + " 倍")) );
@@ -45,6 +47,8 @@ namespace EyeMoT.Balloon
                 _gameDataSelecter.BGColor.Initialize(-1);
                 _gameDataSelecter.IsSwitchMode.Initialize(-1);
                 _gameDataSelecter.ActiveRecord.Initialize(-1);
+                _gameDataSelecter.InitialWaitSeconds.Initialize(-1);
+                _gameDataSelecter.MoveSeconds.Initialize(-1);
                 _gameDataSelecter.GenerarteInterval.Initialize(-1);
 
                 _balloonDataSelecter.CollisionScale.Initialize(-1);
@@ -95,6 +99,8 @@ namespace EyeMoT.Balloon
         public void SetBGColor(string value) => GameData.BGColor = (PreviewManager.BGColor)Enum.Parse(typeof(PreviewManager.BGColor), value);
         public void SetIsSwitchMode(bool value) => GameData.IsSwitchMode = value ? 0 : 1;
         public void SetActiveRecord(bool value) => GameData.ActiveRecord = value ? 0 : 1;
+        public void SetInitialWaitSeconds(string value) => GameData.InitialWaitSeconds = float.Parse(value.Replace("秒", ""));
+        public void SetMoveSeconds(string value) => GameData.MoveSeconds = float.Parse(value.Replace("秒", ""));
         public void SetGenerateInterval(string value) => GameData.GenerarteInterval = float.Parse(value.Replace("秒", ""));
 
         public void SetCollisionScale(string value) => BalloonData.CollisionScale = float.Parse(value.Replace("倍", ""));
@@ -115,6 +121,8 @@ namespace EyeMoT.Balloon
         public PreviewManager.BGColor BGColor = PreviewManager.BGColor.Default;
         public int IsSwitchMode;
         public int ActiveRecord;
+        public float InitialWaitSeconds;
+        public float MoveSeconds;
         public float GenerarteInterval;
     }
 
@@ -127,6 +135,8 @@ namespace EyeMoT.Balloon
         public SelecterUI BGColor;
         public SelecterUI IsSwitchMode;
         public SelecterUI ActiveRecord;
+        public SelecterUI InitialWaitSeconds;
+        public SelecterUI MoveSeconds;
         public SelecterUI GenerarteInterval;
     }
 

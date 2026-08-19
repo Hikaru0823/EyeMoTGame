@@ -35,5 +35,5 @@ Material:
     - _Radius: 0.04
     - _Softness: 1.5
     m_Colors:
-    - _MouseUV: {r: 0.57879144, g: 0.24842106, b: 0, a: 0}
+    - _MouseUV: {r: 0.6261848, g: 0.17473684, b: 0, a: 0}
   m_BuildTextureStacks: []

@@ -131,7 +131,29 @@ namespace EyeMoT
             }
 
             FillEmptyValuesWithLatest(mergedData);
+            SortRowsByGameTime(mergedData);
             return mergedData;
+        }
+
+        private void SortRowsByGameTime(List<string[]> data)
+        {
+            if(data == null || data.Count == 0) return;
+
+            int gameTimeIndex = _types.IndexOf("#GameTime");
+            if(gameTimeIndex < 0) return;
+
+            data.Sort((a, b) =>
+            {
+                float aGameTime = GetGameTime(a, gameTimeIndex);
+                float bGameTime = GetGameTime(b, gameTimeIndex);
+                return aGameTime.CompareTo(bGameTime);
+            });
+        }
+
+        private float GetGameTime(string[] row, int gameTimeIndex)
+        {
+            if(row == null || gameTimeIndex >= row.Length) return float.MaxValue;
+            return float.TryParse(row[gameTimeIndex], out var gameTime) ? gameTime : float.MaxValue;
         }
 
         private void FillEmptyValuesWithLatest(List<string[]> data)
