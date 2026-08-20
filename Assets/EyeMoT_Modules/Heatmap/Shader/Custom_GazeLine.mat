@@ -29,10 +29,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Aspect: 1.7768421
+    - _Aspect: 1.6007067
     - _LineWidth: 0.002
     m_Colors:
-    - _EndUV: {r: 0.5835308, g: 0.1936842, b: 0, a: 0}
+    - _EndUV: {r: 0.53642386, g: 0.19787987, b: 0, a: 0}
     - _LineColor: {r: 0, g: 0, b: 0, a: 0.8}
-    - _StartUV: {r: 0.5835308, g: 0.1936842, b: 0, a: 0}
+    - _StartUV: {r: 0.53642386, g: 0.19787987, b: 0, a: 0}
   m_BuildTextureStacks: []

@@ -77,7 +77,7 @@ namespace EyeMoT.Balloon
         public void StopRecordHeatmap()
         {
             if(PlayerObject.Local.Team != PlayerRegistry.TeamState.Spectator)
-                RecordManager.Instance.StopRecord();
+                RecordManager.Instance.StopRecord(true, GameManager.Instance.GetHeaderList());
         }
 
         public void SetAnalyze(GazeSessionResult result)
@@ -171,7 +171,7 @@ namespace EyeMoT.Balloon
 
             if (PlayerObject.Local.Team != PlayerRegistry.TeamState.Spectator)
             {
-                RecordManager.Instance.StopRecord();
+                RecordManager.Instance.StopRecord(true, GameManager.Instance.GetHeaderList());
             }
 
             var rankedPlayers = PlayerContent.Everyone

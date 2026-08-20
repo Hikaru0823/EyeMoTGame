@@ -12,6 +12,7 @@ using UnityEngine;
 using UnityEngine.InputSystem.Interactions;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.VFX;
 
 namespace EyeMoT.Balloon
 {
@@ -185,6 +186,30 @@ namespace EyeMoT.Balloon
             BalloonSpawnManager.Instance.ResetBalloons();
 
             Init();
+        }
+
+        public List<string[]> GetHeaderList()
+        {
+            var gameData = SettingManager.Instance.GameData;
+            var balloonData = SettingManager.Instance.BalloonData;
+            string vfxName = "";
+            if(BalloonSpawnManager.Instance._vfxHolder.TryGet(balloonData.VFXIdx, out var vfx))
+                vfxName = vfx.Type.ToString();
+            List<string[]> header = new();
+            header.Add(new string[]{"#GameData"});
+            header.Add(new string[]{"#Time", "BackGround", "Appearance", "Interaction"});
+            header.Add(new string[]{gameData.GameTime.ToString("F0"), gameData.BGColor.ToString(), gameData.BalloonGeneratePatern.ToString(), vfxName});
+            header.Add(new string[]{"#BalloonData"});
+            header.Add(new string[]{"#GazeTime", "VisualScale", "CollisionScale", "Amount"});
+            header.Add(new string[]{balloonData.LifeTime.ToString("F1"), balloonData.VisualScale.ToString("F1"), balloonData.CollisionScale.ToString("F1"), gameData.BalloonAmount.ToString("F0")});
+            if(IsAnalyze)
+            {
+                header.Add(new string[]{"#AnalyzeData"});
+                header.Add(new string[]{"#BaseLine", "AppearanceTime", "AppearanceInterval"});
+                header.Add(new string[]{gameData.InitialWaitSeconds.ToString("F0"), gameData.MoveSeconds.ToString("F0"), gameData.GenerarteInterval.ToString("F0")});
+            }
+
+            return header;
         }
 
         public int UpdateBalloonCount()

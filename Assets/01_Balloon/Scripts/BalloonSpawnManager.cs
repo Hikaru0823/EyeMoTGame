@@ -25,7 +25,7 @@ namespace EyeMoT.Balloon
         [Header("Resources")]
         [SerializeField] private Balloon _balloonPrefab;
         [SerializeField] private GameObject _destroyEffectPrefab;
-        [SerializeField] private VFXHolder _vfxHolder;
+        [SerializeField] public VFXHolder _vfxHolder;
         [SerializeField] private GameObject _spawnVolume;
 
         [Header("Settings")]

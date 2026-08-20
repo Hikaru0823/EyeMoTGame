@@ -60,7 +60,7 @@ namespace EyeMoT
                 _gameRecoder?.RecordStart(_recordPath, _fileName);
         }
 
-        public void StopRecord(bool writeCSV = true)
+        public void StopRecord(bool writeCSV = true, List<string[]> header = null)
         {
             _isRecording = false;
             _heatmapRenderer?.StopHeatmap();
@@ -69,11 +69,11 @@ namespace EyeMoT
 
             if(writeCSV)
             {
-                WriteCsv(_recordedData);
+                WriteCsv(_recordedData, header);
             }
         }
 
-        public void WriteCsv(List<string[]> data)
+        public void WriteCsv(List<string[]> data, List<string[]> header)
         {
             #if UNITY_WEBGL && !UNITY_EDITOR
             return;
@@ -90,6 +90,8 @@ namespace EyeMoT
             writeData.Add(new string[] { _startDate.ToString("yyyy/MM/dd HH:mm:ss") });
             writeData.Add(new string[] { "#Screen_X", "Screen_Y", "DataCount" });
             writeData.Add(new string[] { Screen.width.ToString(), Screen.height.ToString(), data.Count.ToString() });
+            if(header.Count > 0)
+                writeData.AddRange(header);
             writeData.Add(_types.ToArray());
             writeData.AddRange(data);
             csvManager.CSVWrite(writeData, _recordPath + _fileName + ".csv", isAppend: false);
