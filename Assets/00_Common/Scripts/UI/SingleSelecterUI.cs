@@ -41,7 +41,7 @@ namespace EyeMoT
         public void SetItems(string[] itemTexts, int defaultIdx = 0)
         {
             _itemTexts = itemTexts;
-            CurrentIdx = _defaultIdx;
+            CurrentIdx = defaultIdx;
             UpdateStatus();
         }
 

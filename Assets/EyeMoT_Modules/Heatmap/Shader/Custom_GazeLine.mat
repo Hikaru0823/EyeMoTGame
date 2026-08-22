@@ -32,7 +32,7 @@ Material:
     - _Aspect: 1.6007067
     - _LineWidth: 0.002
     m_Colors:
-    - _EndUV: {r: 0.53642386, g: 0.19787987, b: 0, a: 0}
+    - _EndUV: {r: 0.580574, g: 0.2862191, b: 0, a: 0}
     - _LineColor: {r: 0, g: 0, b: 0, a: 0.8}
-    - _StartUV: {r: 0.53642386, g: 0.19787987, b: 0, a: 0}
+    - _StartUV: {r: 0.580574, g: 0.2862191, b: 0, a: 0}
   m_BuildTextureStacks: []

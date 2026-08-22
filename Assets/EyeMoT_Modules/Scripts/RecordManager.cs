@@ -14,6 +14,7 @@ namespace EyeMoT
         [SerializeField] private HeatmapRenderer _heatmapRenderer;
         [SerializeField] private GameRecoder _gameRecoder;
         [SerializeField] private FocusCalmManager _focusCalmManager;
+        [SerializeField] private float _baseLineTime = 20f;
         
         private string _recordPath => System.IO.Path.GetDirectoryName(Application.dataPath) + _saveDir + $"/{Application.productName + "_" + _startDate.ToString("yyyyMMddHHmmss")}/";
         private bool _isRecording = false;
@@ -22,6 +23,7 @@ namespace EyeMoT
         private List<string> _types = new();
         private DateTime _startDate;
         private string _fileName;
+        private Coroutine _baseLineRoutine;
 
         void ClearData()
         {
@@ -37,10 +39,14 @@ namespace EyeMoT
             _receivedData.Enqueue(data);
         }
 
-        public void StartRecord(bool gameRecord = true)
+        public void StartRecord(bool gameRecord = true, bool micRecord = true)
         {
+            if(_baseLineRoutine != null)
+            {    
+                StopCoroutine(_baseLineRoutine);
+                _baseLineRoutine = null;
+            }
             ClearData();
-
             _isRecording = true;
             _startDate = System.DateTime.Now;
             _fileName = Application.productName + "_" + _startDate.ToString("yyyyMMddHHmmss");
@@ -57,7 +63,7 @@ namespace EyeMoT
                 _types.AddRange(_focusCalmManager.Type);
             }
             if(gameRecord)
-                _gameRecoder?.RecordStart(_recordPath, _fileName);
+                _gameRecoder?.RecordStart(_recordPath, _fileName, micRecord);
         }
 
         public void StopRecord(bool writeCSV = true, List<string[]> header = null)
@@ -90,7 +96,7 @@ namespace EyeMoT
             writeData.Add(new string[] { _startDate.ToString("yyyy/MM/dd HH:mm:ss") });
             writeData.Add(new string[] { "#Screen_X", "Screen_Y", "DataCount" });
             writeData.Add(new string[] { Screen.width.ToString(), Screen.height.ToString(), data.Count.ToString() });
-            if(header.Count > 0)
+            if(header != null && header.Count > 0)
                 writeData.AddRange(header);
             writeData.Add(_types.ToArray());
             writeData.AddRange(data);
@@ -187,8 +193,39 @@ namespace EyeMoT
             }
         }
 
+        public IEnumerator RecordBaseLineRoutine()
+        {
+            _isRecording = true;
+            _startDate = System.DateTime.Now;
+            _fileName = Application.productName + "_" + "Baseline" + "_" + _startDate.ToString("yyyyMMddHHmmss");
+            _types.Add("#GameTime");
+            _types.AddRange(BalloonSpawnManager.Instance._csvType);
+            if(_heatmapRenderer != null)
+            {
+                _heatmapRenderer.StartHeatmap(true, onDataReceived: Enqueue);
+                _types.AddRange(_heatmapRenderer.Type);
+            }
+            if(_focusCalmManager != null)
+            {
+                _focusCalmManager?.StartRecord(Enqueue);
+                _types.AddRange(_focusCalmManager.Type);
+            }
+            yield return new WaitForSeconds(_baseLineTime);
+            StopRecord();
+        }
+
         void Update()
         {
+            if(!_isRecording && Input.GetKeyDown(KeyCode.L))
+            {
+                if(_baseLineRoutine != null)
+                {    
+                    StopCoroutine(_baseLineRoutine);
+                    _baseLineRoutine = null;
+                }
+                _baseLineRoutine = StartCoroutine(RecordBaseLineRoutine());
+            }
+
             if(!_isRecording) return;
 
             while(_receivedData.TryDequeue(out var data))

@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
+using EyeMoT.Fusion;
 using UnityEngine;
 using Debug = UnityEngine.Debug; // System.Diagnostics.Debug と被るのでエイリアス
 
@@ -19,6 +22,9 @@ namespace EyeMoT
         [Tooltip("AudioListener と同じ GameObject にアタッチした GameAudioRecorder を指定します。")]
         [SerializeField] private GameAudioRecorder _audioRecorder;
 
+        [Tooltip("Windows: FFmpeg DirectShow で使用する外部マイク名。例: Microphone (USB Audio Device)")]
+        [SerializeField] private string _windowsMicrophoneDeviceName = "";
+
         [Header("Debug")]
         [SerializeField] private bool _receiveDebugLog = false;
         [SerializeField] private Canvas _recordStateCanvas;
@@ -33,6 +39,7 @@ namespace EyeMoT
         private string _finalOutputPath;
         private string _tempVideoPath;
         private string _tempAudioPath;
+        private bool _enableMicForCurrentRecording;
 
         void Awake()
         {
@@ -46,17 +53,153 @@ namespace EyeMoT
                 Destroy(gameObject);
                 return;
             }
+
+            #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+                _ffmpegPath = "/opt/homebrew/bin/ffmpeg";
+            #else
+                _ffmpegPath = Path.Combine(Application.streamingAssetsPath, _ffmpegFolderName);
+            #endif
+        }
+
+        public string[] GetMicDevices()
+        {
+
+            List<string> devices = new List<string>();
+
+            if (string.IsNullOrEmpty(_ffmpegPath) || !File.Exists(_ffmpegPath))
+            {
+                Debug.LogError(
+                    $"<color=orange>[GameRecoder]</color> ffmpeg が見つかりません: {_ffmpegPath}"
+                );
+
+                return devices.ToArray();
+            }
+
+        #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+
+            // =========================
+            // Windows : DirectShow
+            // =========================
+
+            string args =
+                "-hide_banner " +
+                "-list_devices true " +
+                "-f dshow " +
+                "-i dummy";
+
+            try
+            {
+                using Process process = new Process();
+
+                process.StartInfo = new ProcessStartInfo()
+                {
+                    FileName = _ffmpegPath,
+                    Arguments = args,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true
+                };
+
+                process.Start();
+
+                string output = process.StandardError.ReadToEnd();
+
+                process.WaitForExit();
+
+                MatchCollection matches = Regex.Matches(
+                    output,
+                    "\"([^\"]+)\"\\s*\\(audio\\)"
+                );
+
+                foreach (Match match in matches)
+                {
+                    string deviceName = match.Groups[1].Value;
+
+                    if (!devices.Contains(deviceName))
+                    {
+                        devices.Add(deviceName);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(
+                    $"<color=orange>[GameRecoder]</color> " +
+                    $"Windows マイク一覧取得エラー: {e.Message}"
+                );
+            }
+
+        #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+
+            // =========================
+            // Mac : マイク録音は使用しない
+            // =========================
+            //
+            // macOS版では外部マイク録音をサポートしない。
+            // 画面録画 + Unity内音声のみ記録する。
+            if (_receiveDebugLog)
+            {
+                Debug.Log(
+                    "<color=orange>[GameRecoder]</color> " +
+                    "macOSでは外部マイク録音を使用しません。"
+                );
+            }
+
+        #else
+
+            Debug.LogWarning(
+                "<color=orange>[GameRecoder]</color> " +
+                "GetMicDevices() は Windows / macOS のみ対応しています。"
+            );
+
+        #endif
+
+            if (_receiveDebugLog)
+            {
+                Debug.Log(
+                    $"<color=orange>[GameRecoder]</color> " +
+                    $"Mic Devices ({devices.Count}):\n" +
+                    string.Join("\n", devices)
+                );
+            }
+
+            return devices.ToArray();
+        }
+
+        public void SetMicDevice(int deviceIdx, string device)
+        {
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+            _windowsMicrophoneDeviceName = device;
+#else
+            // macOSでは外部マイク録音を使用しないため何もしない。
+#endif
         }
 
         /// <summary>
         /// 録画開始
         ///
-        /// FFmpeg : 画面のみ -> temp_video.mp4
-        /// Unity  : 音声のみ -> temp_audio.wav
+        /// FFmpeg : 画面 -> temp_video.mp4
+        ///          WindowsでenableMic=trueの場合のみ外部マイク音声もtemp_video.mp4に収録
+        ///          macOSではenableMicを無視して外部マイク録音を行わない
+        /// Unity  : 画面内音声 -> temp_audio.wav
         ///
         /// RecordEnd() で最終 MP4 に結合する。
         /// </summary>
+        // 既存コード互換: RecordStart() / RecordStart(dirName, fileName)
         public void RecordStart(string dirName = "", string fileName = "")
+        {
+            RecordStart(dirName, fileName, false);
+        }
+
+        // RecordStart(true) / RecordStart(enableMic: true) 用。
+        public void RecordStart(bool enableMic)
+        {
+            RecordStart("", "", enableMic);
+        }
+
+        // enableMic付きの本体。
+        public void RecordStart(string dirName, string fileName, bool enableMic)
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
             Debug.Log("<color=orange>[GameRecoder]</color> WebGL platform does not support GameRecoder. Initialization skipped.");
@@ -110,9 +253,10 @@ namespace EyeMoT
             _tempAudioPath = Path.Combine(recordFolder, $"temp_audio_{tempId}.wav");
 
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-            _ffmpegPath = "/opt/homebrew/bin/ffmpeg";
+            // macOSでは引数enableMicに関係なく外部マイクを無効化する。
+            _enableMicForCurrentRecording = false;
 #else
-            _ffmpegPath = Path.Combine(Application.streamingAssetsPath, _ffmpegFolderName);
+            _enableMicForCurrentRecording = enableMic;
 #endif
 
             if (!File.Exists(_ffmpegPath))
@@ -125,12 +269,24 @@ namespace EyeMoT
             string args;
 
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-            // Mac: 画面だけ録画。音声は GameAudioRecorder が WAV に保存する。
+            // macOS:
+            // 外部マイクは録音しない。
+            // enableMic=true が渡されても画面のみFFmpegで録画し、
+            // Unity内音声はGameAudioRecorderで別WAVとして保存する。
+            if (enableMic && _receiveDebugLog)
+            {
+                Debug.Log(
+                    "<color=orange>[GameRecoder]</color> " +
+                    "macOSではenableMic=trueを無視し、外部マイクなしで録画します。"
+                );
+            }
+
             args =
                 "-y " +
                 "-f avfoundation " +
                 "-framerate 30 " +
                 "-capture_cursor 1 " +
+                "-pixel_format uyvy422 " +
                 "-i \"3:none\" " +
                 "-an " +
                 "-c:v libx264 " +
@@ -138,15 +294,49 @@ namespace EyeMoT
                 "-pix_fmt yuv420p " +
                 $"\"{_tempVideoPath}\"";
 #else
-            // Windows: ddagrab で画面だけ録画。
-            args =
-                "-y " +
-                "-filter_complex \"ddagrab=output_idx=0:framerate=30,hwdownload,format=bgra\" " +
-                "-an " +
-                "-c:v libx264 " +
-                "-preset ultrafast " +
-                "-pix_fmt yuv420p " +
-                $"\"{_tempVideoPath}\"";
+            if (enableMic)
+            {
+                if (string.IsNullOrWhiteSpace(_windowsMicrophoneDeviceName))
+                {
+                    Debug.LogError(
+                        "<color=orange>[GameRecoder]</color> " +
+                        "Windows のマイクデバイス名が設定されていません。"
+                    );
+                    ClearRecordPaths();
+                    return;
+                }
+
+                string escapedMicName = _windowsMicrophoneDeviceName.Replace("\"", "\\\"");
+
+                // Windows: ddagrabで画面、DirectShowで外部マイクを取得。
+                // 同じFFmpegプロセスでtemp_video.mp4へ入れるため同期しやすい。
+                args =
+                    "-y " +
+                    "-thread_queue_size 512 " +
+                    "-f dshow " +
+                    $"-i \"audio={escapedMicName}\" " +
+                    "-filter_complex \"ddagrab=output_idx=0:framerate=30,hwdownload,format=bgra[v]\" " +
+                    "-map \"[v]\" " +
+                    "-map 0:a:0 " +
+                    "-c:v libx264 " +
+                    "-preset ultrafast " +
+                    "-pix_fmt yuv420p " +
+                    "-c:a aac " +
+                    "-b:a 192k " +
+                    $"\"{_tempVideoPath}\"";
+            }
+            else
+            {
+                // Windows: ddagrab で画面だけ録画。
+                args =
+                    "-y " +
+                    "-filter_complex \"ddagrab=output_idx=0:framerate=30,hwdownload,format=bgra\" " +
+                    "-an " +
+                    "-c:v libx264 " +
+                    "-preset ultrafast " +
+                    "-pix_fmt yuv420p " +
+                    $"\"{_tempVideoPath}\"";
+            }
 #endif
 
             try
@@ -233,7 +423,8 @@ namespace EyeMoT
                 Debug.Log(
                     $"<color=orange>[GameRecoder]</color> 録画開始\n" +
                     $"Video: {_tempVideoPath}\n" +
-                    $"Audio: {_tempAudioPath}\n" +
+                    $"Unity Audio: {_tempAudioPath}\n" +
+                    $"Mic: {(_enableMicForCurrentRecording ? "enabled" : "disabled")}\n" +
                     $"Output: {_finalOutputPath}"
                 );
             }
@@ -391,8 +582,13 @@ namespace EyeMoT
         /// <summary>
         /// temp_video.mp4 + temp_audio.wav を最終MP4へMuxする。
         ///
+        /// enableMic=false:
+        ///   temp_video の映像 + Unity音声
+        ///
+        /// enableMic=true:
+        ///   temp_video の映像 + (temp_video内のマイク音声 + Unity音声をamix)
+        ///
         /// 映像は -c:v copy のため再エンコードしない。
-        /// WAVだけAACへ変換する。
         /// </summary>
         private bool MuxVideoAndAudio()
         {
@@ -409,19 +605,49 @@ namespace EyeMoT
                 return false;
             }
 
-            string args =
-                "-y " +
-                "-loglevel error " +
-                $"-i \"{_tempVideoPath}\" " +
-                $"-i \"{_tempAudioPath}\" " +
-                "-map 0:v:0 " +
-                "-map 1:a:0 " +
-                "-c:v copy " +
-                "-c:a aac " +
-                "-b:a 192k " +
-                "-shortest " +
-                "-movflags +faststart " +
-                $"\"{_finalOutputPath}\"";
+            string args;
+
+            if (_enableMicForCurrentRecording)
+            {
+                // input 0: temp_video.mp4（映像 + FFmpegで録った外部マイク）
+                // input 1: temp_audio.wav（Unity画面内音声）
+                //
+                // aformatで両方をStereoへ揃えてからamixする。
+                args =
+                    "-y " +
+                    "-loglevel error " +
+                    $"-i \"{_tempVideoPath}\" " +
+                    $"-i \"{_tempAudioPath}\" " +
+                    "-filter_complex \"" +
+                    "[0:a:0]aformat=channel_layouts=stereo[mic];" +
+                    "[1:a:0]aformat=channel_layouts=stereo[unity];" +
+                    "[mic][unity]amix=inputs=2:duration=longest:dropout_transition=0[aout]" +
+                    "\" " +
+                    "-map 0:v:0 " +
+                    "-map \"[aout]\" " +
+                    "-c:v copy " +
+                    "-c:a aac " +
+                    "-b:a 192k " +
+                    "-shortest " +
+                    "-movflags +faststart " +
+                    $"\"{_finalOutputPath}\"";
+            }
+            else
+            {
+                args =
+                    "-y " +
+                    "-loglevel error " +
+                    $"-i \"{_tempVideoPath}\" " +
+                    $"-i \"{_tempAudioPath}\" " +
+                    "-map 0:v:0 " +
+                    "-map 1:a:0 " +
+                    "-c:v copy " +
+                    "-c:a aac " +
+                    "-b:a 192k " +
+                    "-shortest " +
+                    "-movflags +faststart " +
+                    $"\"{_finalOutputPath}\"";
+            }
 
             try
             {
@@ -521,6 +747,7 @@ namespace EyeMoT
             _finalOutputPath = null;
             _tempVideoPath = null;
             _tempAudioPath = null;
+            _enableMicForCurrentRecording = false;
         }
 
         /// <summary>

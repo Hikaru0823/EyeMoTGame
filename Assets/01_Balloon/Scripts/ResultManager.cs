@@ -63,7 +63,7 @@ namespace EyeMoT.Balloon
             _resultTabManager.OpenPanel("Score");
 
             if(PlayerObject.Local.Team != PlayerRegistry.TeamState.Spectator)
-                RecordManager.Instance.StartRecord(SettingManager.Instance.GameData.ActiveRecord == 0);
+                RecordManager.Instance.StartRecord(SettingManager.Instance.GameData.ActiveRecord == 0, SettingManager.Instance.GameData.ActiveMic == 0);
             _balloonCountText.text = "× 0";
             ResetHeatmapData();
             for (int i = 0; i < players.Length; i++)
